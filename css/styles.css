@@ -320,7 +320,7 @@ body {
     }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 768px) {g
     .header {
         min-height: 40vh;
     }
