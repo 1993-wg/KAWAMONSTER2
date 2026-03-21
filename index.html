@@ -3,68 +3,124 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Repuestos originales y alternativos para Kawasaki KLX 150. Tienda virtual en Itagüí, Antioquia.">
+    <meta name="theme-color" content="#25D366">
     <title>KAWAMONSTER | Repuestos KLX 150</title>
-    <link rel="icon" href="images/favicon.ico" type="image/x-icon">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="manifest" href="manifest.json">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&display=swap" rel="stylesheet">
     <link rel="apple-touch-icon" href="images/logo.png">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-    <link rel="stylesheet" href="css/styles.css?v=5">
+    <link rel="icon" href="images/favicon.ico" type="image/x-icon">
 </head>
 <body>
-
-<header class="header">
-    <div class="header-container">
-        <img src="images/logo.png" alt="KAWAMONSTER Logo" class="logo" loading="lazy">
-        <div class="header-text">
-            <h1>KAWAMONSTER</h1>
-            <p>Repuestos originales y alternativos para Kawasaki KLX 150</p>
-        </div>
-        <a href="https://wa.me/573008310294?text=Hola%2C%20tengo%20una%20consulta%20sobre%20repuestos%20KLX%20150"
-           class="btn-whatsapp-header" target="_blank" rel="noopener">
-            <i class="fab fa-whatsapp"></i>
-            Contactar por WhatsApp
-        </a>
+    <div class="sticky-header">
+        <header class="navbar">
+            <div class="logo">
+                <img src="images/logo.png" alt="KAWAMONSTER" style="height: 70px; width: auto; max-width: 250px;">
+            </div>
+            <div class="search-container">
+                <input type="text" id="searchInput" placeholder="Buscar repuesto..." aria-label="Buscar productos">
+            </div>
+            <div class="cart-icon" id="cart-icon">
+                <span class="cart-count">0</span>
+                <svg viewBox="0 0 24 24" fill="none" class="icon"><path d="M3 3H5L5.4 5M7 13H17L21 5H5.4M7 13L5.4 5M7 13L8.2 17H16M10 21C10 21.5523 9.55228 22 9 22C8.44772 22 8 21.5523 8 21C8 20.4477 8.44772 20 9 20C9.55228 20 10 20.4477 10 21ZM18 21C18 21.5523 17.552 22 17 22C16.4477 22 16 21.5523 16 21C16 20.4477 16.4477 20 17 20C17.5523 20 18 20.4477 18 21Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
+        </header>
     </div>
-</header>
 
-<main>
-    <div class="search-container">
-        <span class="search-icon">🔍</span>
-        <input type="text" id="searchInput" placeholder="Buscar repuestos KLX 150..." autocomplete="off" aria-label="Buscar productos">
-    </div>
-    <p class="search-results-count" id="resultsCount"></p>
-
-    <div class="products-section">
-        <section class="products" id="productos">
-            <div style="grid-column:1/-1; text-align:center; padding:2rem; color:#888;">
-                Cargando repuestos...
+    <main>
+        <section class="hero">
+            <div class="hero-content">
+                <img src="images/logo.png" alt="KAWAMONSTER" class="hero-logo">
+                <h2>KAWAMONSTER</h2>
+                <p>Repuestos originales y alternativos para Kawasaki KLX 150</p>
             </div>
         </section>
+
+        <section class="instructions">
+            <div class="instruction-box">
+                <h3>¿Cómo cotizar tus repuestos? 🛠️</h3>
+                <ol>
+                    <li>Selecciona los productos deseados agregándolos a tu carrito.</li>
+                    <li>Revisa tu carrito (arriba a la derecha) para confirmar o eliminar ítems.</li>
+                    <li>Toca el logo de WhatsApp para enviar la solicitud de cotización al proveedor.</li>
+                </ol>
+            </div>
+        </section>
+
+        <section class="products">
+            <div class="products-grid" id="products-grid">
+                <!-- Products injected by JS -->
+            </div>
+        </section>
+
+        <!-- Sistecrédito Section Bottom -->
+        <section class="credit-section" id="credit-section">
+            <div class="credit-card">
+                <div class="credit-icon">💳</div>
+                <h2>Compra con <span>Sistecrédito</span></h2>
+                <p>¡Financiación fácil y rápida! Aprobación en minutos directamente por WhatsApp para llevarte tus repuestos hoy mismo.</p>
+                <a href="https://wa.me/573008310294?text=Hola%2C%20quiero%20consultar%20financiaci%C3%B3n%20con%20Sistecr%C3%A9dito%20para%20repuestos%20KLX%20150" class="btn-credit" target="_blank" rel="noopener">
+                    <span style="font-size: 1.2rem;">📲</span>
+                    Preguntar por cupo
+                </a>
+            </div>
+        </section>
+    </main>
+
+    <!-- CART SIDEBAR MODAL -->
+    <div class="cart-overlay" id="cart-overlay"></div>
+    <div class="cart-sidebar" id="cart-sidebar">
+        <div class="cart-header">
+            <h2>Tu Cotización</h2>
+            <button id="close-cart" class="btn-close-cart">&times;</button>
+        </div>
+        <div class="cart-items" id="cart-items">
+            <!-- Inject products here -->
+        </div>
+        <div class="cart-footer">
+            <div class="cart-total">
+                <span>Total Estimado:</span>
+                <strong id="cart-total-price">$ Consultar</strong>
+            </div>
+            <button id="btn-checkout-cart" class="btn-checkout-modal">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" style="margin-right:8px;"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.299.045-.677.063-1.092-.069-.252-.08-.575-.187-.988-.365-1.739-.751-2.874-2.502-2.961-2.617-.087-.116-.708-.94-.708-1.793s.448-1.273.607-1.446c.159-.173.346-.217.462-.217l.332.006c.106.005.249-.04.39.298.144.347.491 1.2.534 1.287.043.087.072.188.014.304-.058.116-.087.188-.173.289l-.26.304c-.087.086-.177.18-.076.354.101.174.449.741.964 1.201.666.596 1.216.782 1.391.868.173.086.275.072.376-.043.101-.115.433-.506.549-.68.116-.173.231-.145.39-.087s1.011.477 1.184.564c.173.087.289.129.332.202.043.073.043.423-.101.827z"/></svg>
+                Enviar a WhatsApp
+            </button>
+        </div>
     </div>
 
-    <section class="credit">
-        <div class="credit-content">
-            <div class="credit-icon">💳</div>
-            <h2>Compra con <span class="highlight">Sistecrédito</span></h2>
-            <p class="credit-description">
-                ¡Financiación fácil y rápida! Aprobación en minutos directamente por WhatsApp.
-                Sin complicaciones y con excelentes plazos.
-            </p>
-            <a href="https://wa.me/573008310294?text=Hola%2C%20quiero%20consultar%20financiaci%C3%B3n%20con%20Sistecr%C3%A9dito%20para%20repuestos%20KLX%20150"
-               class="btn-credit" target="_blank" rel="noopener">
-                <span class="btn-icon">📲</span>
-                Preguntar por financiación ahora
-            </a>
-            <p class="credit-note">✅ Aprobación rápida • Sin papeleo complicado</p>
+    <!-- FLOATING WHATSAPP BUTTON (Always visible for checkout/chat) -->
+    <div class="floating-whatsapp" id="floating-wa">
+        <div class="wa-tooltip">Enviar consulta al proveedor</div>
+        <button id="btn-checkout">
+            <span id="btn-wa-text" class="wa-text">WhatsApp</span>
+            <span id="btn-count" class="wa-badge hidden">0</span>
+            <svg class="icon-wa" viewBox="0 0 24 24" fill="currentColor" style="margin-left:5px;"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.299.045-.677.063-1.092-.069-.252-.08-.575-.187-.988-.365-1.739-.751-2.874-2.502-2.961-2.617-.087-.116-.708-.94-.708-1.793s.448-1.273.607-1.446c.159-.173.346-.217.462-.217l.332.006c.106.005.249-.04.39.298.144.347.491 1.2.534 1.287.043.087.072.188.014.304-.058.116-.087.188-.173.289l-.26.304c-.087.086-.177.18-.076.354.101.174.449.741.964 1.201.666.596 1.216.782 1.391.868.173.086.275.072.376-.043.101-.115.433-.506.549-.68.116-.173.231-.145.39-.087s1.011.477 1.184.564c.173.087.289.129.332.202.043.073.043.423-.101.827z"/></svg>
+        </button>
+    </div>
+
+    <!-- FLOATING SISTECREDITO BUTTON -->
+    <div class="floating-sistecredito">
+        <a href="https://wa.me/573008310294?text=Hola%2C%20quiero%20consultar%20financiaci%C3%B3n%20con%20Sistecr%C3%A9dito%20para%20repuestos%20KLX%20150" target="_blank" rel="noopener">
+            <span class="icon" style="font-size:1.3rem;">💳</span> 
+            <span class="sc-text">Sistecrédito</span>
+        </a>
+    </div>
+
+    <!-- PWA Install Prompt -->
+    <div id="install-prompt" class="install-prompt hidden">
+        <div class="install-content">
+            <p>¡Instala KAWAMONSTER para acceso directo!</p>
+            <div class="install-actions">
+                <button id="btn-install" class="btn-primary">Instalar</button>
+                <button id="btn-close-install" class="btn-secondary">Ahora no</button>
+            </div>
         </div>
-    </section>
-</main>
+    </div>
 
-<footer>
-    <p>© 2026 KAWAMONSTER — Itagüí, Antioquia — Solo tienda virtual</p>
-    <p>WhatsApp: +57 300 831 0294</p>
-</footer>
-
-<script type="module" src="./main.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="app.js"></script>
 </body>
 </html>
