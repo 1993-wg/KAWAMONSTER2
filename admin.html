@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Administrador | KAWAMONSTER</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="icon" href="images/favicon.ico" type="image/x-icon">
+    <style>
+        .admin-container {
+            max-width: 1000px;
+            margin: 2rem auto;
+            padding: 1rem;
+            background: white;
+            border-radius: 1rem;
+            box-shadow: var(--shadow);
+        }
+        .admin-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .admin-form {
+            display: grid;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+            background: #f9f9f9;
+            padding: 1.5rem;
+            border-radius: 0.5rem;
+            border: 1px solid var(--border-color);
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        .form-group label {
+            font-weight: 600;
+        }
+        .form-group input, .form-group select {
+            padding: 0.8rem;
+            border: 1px solid var(--border-color);
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            transition: border-color 0.2s;
+        }
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: var(--brand-dark);
+        }
+        .form-group small {
+            color: #666;
+            font-size: 0.85rem;
+        }
+        .btn-submit {
+            background: var(--brand-color);
+            color: #111;
+            font-weight: 800;
+            padding: 1rem;
+            border: none;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: opacity 0.2s;
+            font-size: 1.1rem;
+        }
+        .btn-submit:hover {
+            opacity: 0.8;
+        }
+        .btn-submit:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            opacity: 1;
+        }
+        .btn-cancel {
+            background: #eee;
+            color: #333;
+            font-weight: 800;
+            padding: 1rem;
+            border: none;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            margin-top: 0.5rem;
+            display: none;
+            font-size: 1rem;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+        th {
+            background: #f0f0f0;
+            font-weight: 700;
+        }
+        .prod-img {
+            width: 60px;
+            height: 60px;
+            object-fit: contain;
+            border-radius: 0.3rem;
+            background: #fff;
+            padding: 2px;
+            border: 1px solid #eaeaea;
+        }
+        .action-btns {
+            display: flex;
+            gap: 0.5rem;
+        }
+        .btn-edit {
+            background: #4A90E2;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 0.3rem;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        .btn-delete {
+            background: #D0021B;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 0.3rem;
+            cursor: pointer;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <header class="navbar">
+        <div class="logo">
+            <a href="index.html">
+                <img src="images/logo.png" alt="KAWAMONSTER" style="height: 50px; width: auto;">
+            </a>
+        </div>
+        <div style="font-weight: 800; font-size: 1.2rem;">Panel de Administrador</div>
+        <div>
+            <a href="index.html" style="text-decoration: none; color: #333; font-weight: 600;">&larr; Volver a la tienda</a>
+        </div>
+    </header>
+
+    <main class="admin-container">
+        <div class="admin-header">
+            <h2>Gestión de Productos</h2>
+        </div>
+
+        <form id="productForm" class="admin-form">
+            <input type="hidden" id="productId">
+            
+            <div class="form-group">
+                <label for="nombre">Nombre del Producto</label>
+                <input type="text" id="nombre" required placeholder="Ej. Filtro de Aceite KLX 150">
+            </div>
+            
+            <div class="form-group">
+                <label for="precio">Precio (COP) - Dejar en blanco para "Consultar"</label>
+                <input type="number" id="precio" placeholder="Ej. 15000">
+            </div>
+            
+            <div class="form-group">
+                <label for="imagenFile">Imagen (Subir archivo)</label>
+                <input type="file" id="imagenFile" accept="image/*">
+                <small>Opcional si usas una URL directa. Requiere que exista un bucket "productos" en tu Supabase configurado y público.</small>
+            </div>
+
+            <div class="form-group">
+                <label for="imagenUrl">URL de la Imagen (Si no subes archivo)</label>
+                <input type="url" id="imagenUrl" placeholder="https://...">
+            </div>
+
+            <div class="form-group">
+                <label for="activo">Estado</label>
+                <select id="activo">
+                    <option value="true">Activo / Visible</option>
+                    <option value="false">Inactivo / Oculto</option>
+                </select>
+            </div>
+
+            <button type="submit" class="btn-submit" id="btnGuardar">Guardar Producto</button>
+            <button type="button" class="btn-cancel" id="btnCancelar" onclick="resetForm()">Cancelar Edición</button>
+        </form>
+
+        <div style="overflow-x: auto;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Imagen</th>
+                        <th>Nombre</th>
+                        <th>Precio</th>
+                        <th>Estado</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="adminProductsList">
+                    <tr><td colspan="5" style="text-align:center;">Cargando productos...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="admin.js"></script>
+</body>
+</html>
