@@ -143,12 +143,31 @@
             </a>
         </div>
         <div style="font-weight: 800; font-size: 1.2rem;">Panel de Administrador</div>
-        <div>
+        <div style="display: flex; gap: 1rem; align-items: center;">
+            <button id="btnLogout" style="display: none; background: #eee; border: none; padding: 0.5rem 1rem; border-radius: 0.5rem; cursor: pointer; font-weight: 600;">Cerrar Sesión</button>
             <a href="index.html" style="text-decoration: none; color: #333; font-weight: 600;">&larr; Volver a la tienda</a>
         </div>
     </header>
 
-    <main class="admin-container">
+    <!-- PANTALLA DE LOGIN -->
+    <div id="loginContainer" class="admin-container" style="max-width: 400px; text-align: center; margin-top: 4rem;">
+        <h2 style="margin-bottom: 1rem;">Acceso Privado</h2>
+        <p style="color: #666; margin-bottom: 2rem;">Ingresa tus credenciales para administrar los productos.</p>
+        <form id="loginForm" class="admin-form" style="text-align: left;">
+            <div class="form-group">
+                <label for="loginEmail">Correo Electrónico</label>
+                <input type="email" id="loginEmail" required placeholder="admin@kawamonster.com">
+            </div>
+            <div class="form-group">
+                <label for="loginPassword">Contraseña</label>
+                <input type="password" id="loginPassword" required placeholder="••••••••">
+            </div>
+            <button type="submit" class="btn-submit" id="btnLoginBtn">Ingresar al Panel</button>
+        </form>
+    </div>
+
+    <!-- PANTALLA DE ADMINISTRADOR (Oculta por defecto) -->
+    <main id="adminMain" class="admin-container" style="display: none;">
         <div class="admin-header">
             <h2>Gestión de Productos</h2>
         </div>

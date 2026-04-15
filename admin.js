@@ -186,4 +186,55 @@ document.getElementById('productForm').addEventListener('submit', async (e) => {
     }
 });
 
-document.addEventListener('DOMContentLoaded', loadAdminProducts);
+// LOGIC DE AUTENTICACION CON SUPABASE
+
+const loginContainer = document.getElementById('loginContainer');
+const adminMain = document.getElementById('adminMain');
+const btnLogout = document.getElementById('btnLogout');
+
+const checkSession = async () => {
+    const { data: { session } } = await db.auth.getSession();
+    if (session) {
+        loginContainer.style.display = 'none';
+        adminMain.style.display = 'block';
+        btnLogout.style.display = 'block';
+        loadAdminProducts();
+    } else {
+        loginContainer.style.display = 'block';
+        adminMain.style.display = 'none';
+        btnLogout.style.display = 'none';
+    }
+};
+
+document.getElementById('loginForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const email = document.getElementById('loginEmail').value;
+    const password = document.getElementById('loginPassword').value;
+    const btn = document.getElementById('btnLoginBtn');
+    
+    btn.disabled = true;
+    btn.textContent = 'Verificando...';
+    
+    const { data, error } = await db.auth.signInWithPassword({
+        email: email,
+        password: password,
+    });
+    
+    btn.disabled = false;
+    btn.textContent = 'Ingresar al Panel';
+    
+    if (error) {
+        alert('Error al iniciar sesión: Credeciales incorrectas o usuario no existe.');
+    } else {
+        checkSession();
+    }
+});
+
+btnLogout.addEventListener('click', async () => {
+    await db.auth.signOut();
+    document.getElementById('loginEmail').value = '';
+    document.getElementById('loginPassword').value = '';
+    checkSession();
+});
+
+document.addEventListener('DOMContentLoaded', checkSession);
