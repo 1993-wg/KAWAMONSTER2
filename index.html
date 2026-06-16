@@ -21,6 +21,9 @@
             </div>
             <div class="search-container">
                 <input type="text" id="searchInput" placeholder="Buscar repuesto..." aria-label="Buscar productos">
+                <div class="search-instructions">
+                    Cotiza fácil: 1. Agrega al carrito 🛒 &nbsp;2. Revisa el carrito 📋 &nbsp;3. Envía por WhatsApp 📲
+                </div>
             </div>
             <div class="cart-icon" id="cart-icon">
                 <span class="cart-count">0</span>
@@ -33,19 +36,13 @@
         <section class="hero">
             <div class="hero-content">
                 <img src="images/logo.png" alt="KAWAMONSTER" class="hero-logo">
-                <h2>KAWAMONSTER</h2>
-                <p>Repuestos originales y alternativos para Kawasaki KLX 150</p>
-            </div>
-        </section>
-
-        <section class="instructions">
-            <div class="instruction-box">
-                <h3>¿Cómo cotizar tus repuestos? 🛠️</h3>
-                <ol>
-                    <li>Selecciona los productos deseados agregándolos a tu carrito.</li>
-                    <li>Revisa tu carrito (arriba a la derecha) para confirmar o eliminar ítems.</li>
-                    <li>Toca el logo de WhatsApp para enviar la solicitud de cotización al proveedor.</li>
-                </ol>
+                <h1 class="hero-title">MI GARAJE KAWA-MONSTER</h1>
+                
+                <div class="hero-actions">
+                    <button class="btn-hero-whatsapp" id="btn-hero-whatsapp">
+                        SOLICITAR REPUESTO (WhatsApp)
+                    </button>
+                </div>
             </div>
         </section>
 
@@ -124,6 +121,12 @@
     <footer style="text-align: center; padding: 2rem; border-top: 1px solid var(--border-color); margin-top: 2rem;">
         <a href="admin.html" style="color: #666; text-decoration: none; font-size: 0.9rem;">Panel de Administrador</a>
     </footer>
+
+    <!-- Image Modal (Lightbox) -->
+    <div id="image-modal" class="image-modal">
+        <span class="image-modal-close">&times;</span>
+        <img id="image-modal-img" class="image-modal-content" src="" alt="Imagen ampliada">
+    </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="app.js"></script>

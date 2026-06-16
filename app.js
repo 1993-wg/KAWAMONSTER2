@@ -14,6 +14,15 @@ const formatPrice = (price) => {
     return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(num);
 };
 
+// Helper to get product image with safe fallback SVG
+const getProductImage = (imgUrl) => {
+    if (!imgUrl || imgUrl.trim() === '' || imgUrl === 'images/placeholder.jpg') {
+        return "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 24 24' fill='none' stroke='%23bbb' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' style='background-color:%23f3f3f3;'><rect x='3' y='3' width='18' height='18' rx='2' ry='2'/><circle cx='8.5' cy='8.5' r='1.5'/><polyline points='21 15 16 10 5 21'/></svg>";
+    }
+    return imgUrl;
+};
+
+
 // Fetch products from Supabase
 const loadProducts = async () => {
     const grid = document.getElementById('products-grid');
@@ -50,14 +59,14 @@ const renderProducts = (productsToRender) => {
         const card = document.createElement('div');
         card.className = 'card';
         card.innerHTML = `
-            <div class="card-img" style="background:#fff; display:flex; align-items:center; justify-content:center; overflow:hidden;">
-                <img src="${product.imagen}" alt="${product.nombre}" style="max-width:100%; max-height:100%; object-fit:contain;" loading="lazy" onerror="this.src='images/placeholder.jpg'">
+            <div class="card-img" style="background:#fff; display:flex; align-items:center; justify-content:center; overflow:hidden;" onclick="window.openImageModal(this.querySelector('img').src, '${product.nombre.replace(/'/g, "\\'")}')">
+                <img src="${getProductImage(product.imagen)}" alt="${product.nombre}" style="max-width:100%; max-height:100%; object-fit:contain;" loading="lazy" onerror="this.onerror=null; this.src='images/logo.png';">
             </div>
             <div class="card-body">
                 <h3 class="card-title">${product.nombre}</h3>
                 <p class="card-price">${formatPrice(product.precio)}</p>
                 <button class="btn-add ${isInCart ? 'selected' : ''}" onclick="window.toggleCart(${product.id})">
-                    ${isInCart ? 'Añadido ✓' : 'Agregar'}
+                    ${isInCart ? 'Añadido ✓' : 'Comprar ahora'}
                 </button>
             </div>
         `;
@@ -88,7 +97,7 @@ const renderCartItems = () => {
             const div = document.createElement('div');
             div.className = 'cart-item';
             div.innerHTML = `
-                <img src="${item.imagen}" class="cart-item-img" onerror="this.src='images/placeholder.jpg'">
+                <img src="${getProductImage(item.imagen)}" class="cart-item-img" onerror="this.onerror=null; this.src='images/logo.png';">
                 <div class="cart-item-details">
                     <div class="cart-item-title">${item.nombre}</div>
                     <div class="cart-item-price">${formatPrice(item.precio)}</div>
@@ -137,7 +146,7 @@ const updateUI = () => {
                 btn.textContent = 'Añadido ✓';
             } else {
                 btn.classList.remove('selected');
-                btn.textContent = 'Agregar';
+                btn.textContent = 'Comprar ahora';
             }
         }
     });
@@ -226,6 +235,21 @@ document.getElementById('cart-overlay')?.addEventListener('click', () => {
     document.getElementById('cart-overlay')?.classList.remove('active');
 });
 
+// Image Modal (Lightbox) Events
+window.openImageModal = (src, name) => {
+    const modal = document.getElementById('image-modal');
+    const modalImg = document.getElementById('image-modal-img');
+    if (modal && modalImg) {
+        modalImg.src = src;
+        modalImg.alt = name;
+        modal.classList.add('active');
+    }
+};
+
+document.getElementById('image-modal')?.addEventListener('click', () => {
+    document.getElementById('image-modal').classList.remove('active');
+});
+
 // PWA Installation
 let deferredPrompt;
 const installPrompt = document.getElementById('install-prompt');
@@ -259,6 +283,12 @@ if(document.getElementById('btn-close-install')) {
 document.addEventListener('DOMContentLoaded', () => {
     setupSearch();
     loadProducts();
+    
+    // Configurar comportamiento para botón Hero WhatsApp
+    const btnHeroWa = document.getElementById('btn-hero-whatsapp');
+    if (btnHeroWa) {
+        btnHeroWa.addEventListener('click', sendWhatsApp);
+    }
 });
 
 // Service Worker Registration

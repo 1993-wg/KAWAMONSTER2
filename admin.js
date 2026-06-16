@@ -10,6 +10,15 @@ const formatPrice = (price) => {
     return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(num);
 };
 
+// Helper to get product image with safe fallback SVG
+const getProductImage = (imgUrl) => {
+    if (!imgUrl || imgUrl.trim() === '' || imgUrl === 'images/placeholder.jpg') {
+        return "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 24 24' fill='none' stroke='%23bbb' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' style='background-color:%23f3f3f3;'><rect x='3' y='3' width='18' height='18' rx='2' ry='2'/><circle cx='8.5' cy='8.5' r='1.5'/><polyline points='21 15 16 10 5 21'/></svg>";
+    }
+    return imgUrl;
+};
+
+
 const loadAdminProducts = async () => {
     const tbody = document.getElementById('adminProductsList');
     tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Cargando repuestos...</td></tr>';
@@ -41,7 +50,7 @@ const renderAdminProducts = () => {
     adminProducts.forEach(product => {
         const tr = document.createElement('tr');
         tr.innerHTML = `
-            <td><img src="${product.imagen}" alt="img" class="prod-img" onerror="this.src='images/placeholder.jpg'"></td>
+            <td><img src="${getProductImage(product.imagen)}" alt="img" class="prod-img" onerror="this.onerror=null; this.src='images/logo.png';"></td>
             <td>${product.nombre}</td>
             <td>${formatPrice(product.precio)}</td>
             <td>
@@ -154,7 +163,7 @@ document.getElementById('productForm').addEventListener('submit', async (e) => {
         }
         
         if (!imagen) {
-            imagen = 'images/placeholder.jpg';
+            imagen = '';
         }
         
         const payload = { nombre, precio, imagen, activo };
