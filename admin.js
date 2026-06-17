@@ -1,6 +1,11 @@
 const supabaseUrl = "https://ipfarkclogesomyvzknv.supabase.co";
 const supabaseKey = "sb_publishable_qirvbDjAUPFMCOR0orzixg_E784q5Hd";
-const db = window.supabase.createClient(supabaseUrl, supabaseKey);
+let db = null;
+try {
+    db = window.supabase.createClient(supabaseUrl, supabaseKey);
+} catch (e) {
+    console.warn('Supabase no pudo inicializarse:', e);
+}
 
 let adminProducts = [];
 
@@ -55,6 +60,18 @@ const loadAdminProducts = async () => {
                 </div>
             </td>
         </tr>`;
+    if (!db) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="5">
+                    <div class="empty-state">
+                        <div class="empty-icon">⚠️</div>
+                        <p style="color:var(--danger);">Supabase no está conectado.</p>
+                    </div>
+                </td>
+            </tr>`;
+        return;
+    }
 
     const { data, error } = await db
         .from("productos")
