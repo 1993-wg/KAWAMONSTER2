@@ -947,18 +947,24 @@
 
         <nav class="sidebar-nav">
             <span class="nav-section-label">Principal</span>
-            <a href="#" class="nav-item active" id="navProductos">
+            <a href="#" class="nav-item active" id="navProductos" onclick="switchTab('productos')">
                 <span class="nav-icon">📦</span> Gestión de Productos
+            </a>
+            <a href="#" class="nav-item" id="navGema" onclick="switchTab('gema')">
+                <span class="nav-icon">✨</span> Gema de Conocimiento
+            </a>
+            <a href="#" class="nav-item" id="navImagenes" onclick="switchTab('imagenes')">
+                <span class="nav-icon">🎨</span> Nano Banan Pro
             </a>
             <a href="index.html" class="nav-item">
                 <span class="nav-icon">🛒</span> Ver Tienda
             </a>
 
             <span class="nav-section-label" style="margin-top:0.5rem;">Información</span>
-            <div class="nav-item">
+            <div class="nav-item" style="cursor: default;">
                 <span class="nav-icon">📊</span> Estadísticas
             </div>
-            <div class="nav-item">
+            <div class="nav-item" style="cursor: pointer;" onclick="openGeminiModal()">
                 <span class="nav-icon">⚙️</span> Configuración
             </div>
         </nav>
@@ -996,6 +1002,7 @@
 
         <!-- PAGE BODY -->
         <main class="page-body" id="adminMain">
+            <div id="viewCatalog">
 
             <!-- STAT CARDS -->
             <div class="stats-grid">
@@ -1172,6 +1179,184 @@
                     </table>
                 </div>
             </div>
+            </div> <!-- /viewCatalog -->
+
+            <!-- VIEW GEMA DE CONOCIMIENTO -->
+            <div id="viewGema" style="display: none;">
+                <!-- Explicación de la Gema -->
+                <div class="section-card" style="border: 1px solid rgba(112, 0, 255, 0.3); background: rgba(112, 0, 255, 0.01);">
+                    <div class="section-card-header">
+                        <h2 style="color: #b070ff; margin: 0; font-size: 1rem; font-weight: 700; display: flex; align-items: center; gap: 0.6rem;">
+                            <span class="section-icon" style="background: rgba(112, 0, 255, 0.15); color: #b070ff; width: 28px; height: 28px; border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; font-size: 0.9rem;">✨</span>
+                            Gema de Conocimiento de la Marca
+                        </h2>
+                    </div>
+                    <div class="section-card-body" style="padding: 1.5rem;">
+                        <p style="font-size: 0.88rem; color: var(--text-secondary); margin-bottom: 1.5rem; line-height: 1.6;">
+                            Personaliza la personalidad de tu IA. Escribe directrices de estilo e introduce archivos (instrucciones de texto o imágenes de referencia) para que Gemini y el generador creativo <b>"Nano Banan Pro"</b> comprendan el tono, estética e identidad visual de tu marca.
+                        </p>
+
+                        <div class="form-grid">
+                            <div class="form-group full-width">
+                                <label for="gemaGuidelines">Directrices e Instrucciones de Marca</label>
+                                <textarea id="gemaGuidelines" class="form-control" rows="5" placeholder="Ej. Estilo fotográfico: Fotos de repuestos limpios sobre fondo negro, iluminación dramática de estudio con brillos verdes. Tono de textos: Técnico, confiable y apasionado por las motos." style="resize: vertical; font-family: inherit;"></textarea>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="gemaTextFile">Añadir Archivo de Texto (Conocimiento en texto)</label>
+                                <input type="file" id="gemaTextFile" class="form-control" accept=".txt,.md,.json">
+                                <span class="form-hint">Formatos: .txt, .md, .json. Útil para cargar manuales de productos o guías.</span>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="gemaImgFile">Añadir Imagen de Referencia (Conocimiento visual)</label>
+                                <input type="file" id="gemaImgFile" class="form-control" accept="image/*">
+                                <span class="form-hint">Imágenes de referencia de logo, empaques o estilo visual.</span>
+                            </div>
+
+                            <div class="form-actions" style="margin-top: 0.5rem; grid-column: 1 / -1;">
+                                <button type="button" class="btn btn-primary" style="background: linear-gradient(135deg, #7000ff, #00e676); color: #0d0f14; border: none; font-weight: 700; box-shadow: 0 4px 15px rgba(112,0,255,0.25);" onclick="saveGemaSettings()">
+                                    <span>💾</span> Guardar Configuración de Gema
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Lista de Archivos de Conocimiento Cargados -->
+                <div class="section-card" style="margin-top: 1.5rem;">
+                    <div class="section-card-header">
+                        <h2>
+                            <span class="section-icon">🗂️</span>
+                            Archivos de Conocimiento de la Gema
+                        </h2>
+                        <span id="gemaFilesCount" style="font-size: 0.8rem; color: var(--text-muted); font-weight: 500;">0 archivos cargados</span>
+                    </div>
+                    <div class="section-card-body" style="padding: 1.5rem;">
+                        <div id="gemaFilesList" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1rem;">
+                            <!-- Archivos cargados se muestran aquí -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW NANO BANAN PRO / DISEÑADOR -->
+            <div id="viewNanoBanan" style="display: none;">
+                <div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 1.5rem; align-items: start;">
+                    
+                    <!-- LADO IZQUIERDO: FORMULARIO GENERADOR IA -->
+                    <div class="section-card" style="border: 1px solid rgba(0, 230, 118, 0.25);">
+                        <div class="section-card-header">
+                            <h2 style="color: var(--brand); margin: 0; font-size: 1rem; font-weight: 700; display: flex; align-items: center; gap: 0.6rem;">
+                                <span class="section-icon" style="background: var(--brand-glow); color: var(--brand); width: 28px; height: 28px; border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; font-size: 0.9rem;">🎨</span>
+                                Generador de Imágenes Promocionales IA (Nano Banan Pro)
+                            </h2>
+                        </div>
+                        <div class="section-card-body" style="padding: 1.5rem;">
+                            <p style="font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 1.2rem; line-height: 1.5;">
+                                Genera imágenes de alta definición y promocionales usando inteligencia artificial. Se incorporará automáticamente el contexto de estilo de la <b>Gema de Conocimiento</b> si está configurada.
+                            </p>
+
+                            <div style="display: flex; flex-direction: column; gap: 1.2rem;">
+                                <div class="form-group">
+                                    <label for="nbProductSelect">Asociar a Producto (Opcional)</label>
+                                    <select id="nbProductSelect" class="form-control">
+                                        <option value="">-- No asociar (Sólo generar promo genérico) --</option>
+                                        <!-- Products options loaded dynamically -->
+                                    </select>
+                                    <span class="form-hint">Permite autocompletar el nombre y actualizar la imagen en Supabase.</span>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="nbStyleSelect">Estilo Visual / Preset</label>
+                                    <select id="nbStyleSelect" class="form-control">
+                                        <option value="estudio">Fondo de Estudio Negro Minimalista (Limpio y Premium)</option>
+                                        <option value="tuning">Estilo Tuning / Garaje con Luces Neon (Verde y Azul)</option>
+                                        <option value="carretera">Acción en Carretera (Alta velocidad, desenfoque de fondo)</option>
+                                        <option value="mecanica">Taller de Mecánica Industrial (Engranajes, herramientas, humo)</option>
+                                        <option value="cyberpunk">Cyberpunk / Estilo Futurista de Neón</option>
+                                        <option value="banner">Banner Publicitario para Redes Sociales</option>
+                                    </select>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="nbPrompt">Detalles Adicionales del Prompt (Instrucción en inglés o español)</label>
+                                    <textarea id="nbPrompt" class="form-control" rows="3" placeholder="Ej. pastillas de freno en un fondo de carreras con chispa de metal, hiperrealista, 8k..." style="resize: vertical;"></textarea>
+                                </div>
+
+                                <button type="button" id="btnNBGenerate" class="btn btn-primary" style="background: linear-gradient(135deg, #00e676, #7000ff); color: #0d0f14; border: none; font-weight: 700; width: 100%; box-shadow: 0 4px 15px rgba(0,230,118,0.25);" onclick="generateNanoBananImage()">
+                                    <span>🪄 Generar Imagen con IA</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- LADO DERECHO: VISUALIZADOR DE RESULTADO -->
+                    <div class="section-card">
+                        <div class="section-card-header">
+                            <h2>
+                                <span class="section-icon">🖼️</span>
+                                Vista Previa del Promocional
+                            </h2>
+                        </div>
+                        <div class="section-card-body" style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 320px; background: rgba(0,0,0,0.2); border-radius: var(--radius-md); padding: 1.5rem; text-align: center;">
+                            <div id="nbImageContainer" style="width: 100%; max-width: 320px; display: none;">
+                                <img id="nbGeneratedImg" src="" alt="Promocional" style="width: 100%; height: auto; border-radius: var(--radius-sm); border: 1px solid var(--border); box-shadow: var(--shadow-card); background: #161921;">
+                                <div style="display: flex; gap: 0.5rem; margin-top: 1rem; width: 100%;">
+                                    <a id="nbDownloadLink" href="#" download="promocional.jpg" class="btn btn-secondary" style="flex: 1; font-size: 0.82rem; padding: 0.6rem; text-decoration: none;">
+                                        📥 Descargar
+                                    </a>
+                                    <button type="button" id="nbSaveProductBtn" class="btn btn-primary" style="flex: 1.2; font-size: 0.82rem; padding: 0.6rem; background: var(--brand); color: #0d0f14; border: none; font-weight: 700; border-radius: var(--radius-sm); cursor: pointer;" onclick="saveGeneratedImgToProduct()">
+                                        💾 Usar en Producto
+                                    </button>
+                                </div>
+                            </div>
+                            <div id="nbPlaceholder" style="color: var(--text-muted);">
+                                <div style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.3;">🎨</div>
+                                <p style="font-size: 0.9rem;">No se ha generado ninguna imagen promocional todavía.</p>
+                                <p style="font-size: 0.75rem; margin-top: 0.4rem; color: var(--text-muted);">Completa el formulario y haz clic en Generar.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- BUSCADOR DE IMÁGENES DE PEXELS (INTEGRADO ABAJO) -->
+                <div class="section-card" style="margin-top: 1.5rem;">
+                    <div class="section-card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+                        <h2>
+                            <span class="section-icon">🔍</span>
+                            Buscador de Fotos de Stock (Pexels API)
+                        </h2>
+                        <button type="button" id="btnPexelsConfig" class="btn" style="background: rgba(255,255,255,0.05); color: var(--text-secondary); border: 1px solid var(--border); padding: 0.35rem 0.8rem; font-size: 0.75rem; border-radius: 99px; cursor: pointer;" onclick="openGeminiModal()">
+                            ⚙️ Configurar Pexels Key
+                        </button>
+                    </div>
+                    <div class="section-card-body" style="padding: 1.5rem;">
+                        <p style="font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 1rem;">
+                            Busca imágenes de alta calidad de motocicletas o repuestos en Pexels y asígnalas a tus productos con un solo clic. Requiere configurar la API Key de Pexels.
+                        </p>
+                        
+                        <div style="display: flex; gap: 0.75rem; margin-bottom: 1.2rem; flex-wrap: wrap; align-items: center;">
+                            <div style="flex: 1; min-width: 200px;">
+                                <input type="text" id="pexelsSearchQuery" class="form-control" placeholder="Ej. motorcycle gear, chain, spark plug..." style="transition: var(--transition);">
+                            </div>
+                            <div style="width: 250px;">
+                                <select id="pexelsProductSelect" class="form-control">
+                                    <option value="form">-- Enviar a Formulario Activo --</option>
+                                    <!-- Dynamic products options -->
+                                </select>
+                            </div>
+                            <button type="button" id="btnPexelsSearch" class="btn btn-primary" style="background: var(--brand); color: #0d0f14; border: none; font-weight: 700; padding: 0.75rem 1.5rem; border-radius: var(--radius-md);" onclick="searchPexelsImages()">
+                                <span>🔍 Buscar</span>
+                            </button>
+                        </div>
+
+                        <div id="pexelsResultsList" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 1rem; max-height: 400px; overflow-y: auto; padding-right: 0.25rem;">
+                            <!-- Pexels search results rendered here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
 
         </main>
     </div>
@@ -1179,25 +1364,33 @@
 
 <!-- ===== GEMINI KEY MODAL ===== -->
 <div id="geminiModal" class="login-overlay" style="display:none; background: rgba(13, 15, 20, 0.85); backdrop-filter: blur(8px); justify-content: center; align-items: center;">
-    <div class="login-card" style="border: 1px solid rgba(112, 0, 255, 0.3); box-shadow: 0 8px 32px rgba(112, 0, 255, 0.15); animation: fadeInUp 0.3s ease;">
-        <div class="login-brand" style="margin-bottom: 1.5rem;">
-            <span style="font-size: 2.8rem; display: block; margin-bottom: 0.5rem; filter: drop-shadow(0 0 10px rgba(112,0,255,0.5));">✨</span>
-            <h2 style="font-size: 1.4rem; font-weight: 800; color: var(--text-primary);">Configuración de Gemini IA</h2>
-            <p style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 0.3rem;">Para activar las funciones de IA, ingresa tu API Key gratuita de Google Gemini.</p>
+    <div class="login-card" style="border: 1px solid rgba(112, 0, 255, 0.3); box-shadow: 0 8px 32px rgba(112, 0, 255, 0.15); animation: fadeInUp 0.3s ease; max-width: 450px;">
+        <div class="login-brand" style="margin-bottom: 1.2rem;">
+            <span style="font-size: 2.6rem; display: block; margin-bottom: 0.3rem; filter: drop-shadow(0 0 10px rgba(112,0,255,0.5));">✨</span>
+            <h2 style="font-size: 1.35rem; font-weight: 800; color: var(--text-primary);">Configuración de API Keys</h2>
+            <p style="color: var(--text-secondary); font-size: 0.82rem; margin-top: 0.3rem;">Configura las claves de API necesarias para activar la IA y el buscador de stock.</p>
         </div>
         
-        <div class="login-form">
+        <div class="login-form" style="display: flex; flex-direction: column; gap: 1rem;">
             <div class="form-group">
                 <label for="geminiApiKey">Gemini API Key</label>
                 <input type="password" id="geminiApiKey" class="form-control" placeholder="AIzaSy..." required style="letter-spacing: 0.1em;">
-                <span class="form-hint" style="color: var(--brand); font-size: 0.75rem;">
+                <span class="form-hint" style="color: var(--brand); font-size: 0.72rem;">
                     Obtén una clave gratis en <a href="https://aistudio.google.com/" target="_blank" style="color: var(--brand); text-decoration: underline; font-weight: 600;">Google AI Studio</a>.
                 </span>
             </div>
+
+            <div class="form-group">
+                <label for="pexelsApiKey">Pexels API Key</label>
+                <input type="password" id="pexelsApiKey" class="form-control" placeholder="Clave de Pexels..." style="letter-spacing: 0.1em;">
+                <span class="form-hint" style="color: var(--brand); font-size: 0.72rem;">
+                    Obtén una clave gratis en <a href="https://www.pexels.com/api/" target="_blank" style="color: var(--brand); text-decoration: underline; font-weight: 600;">Pexels API Portal</a>.
+                </span>
+            </div>
             
-            <div style="display: flex; gap: 0.75rem; margin-top: 1rem;">
+            <div style="display: flex; gap: 0.75rem; margin-top: 0.5rem;">
                 <button type="button" class="btn btn-secondary" onclick="closeGeminiModal()" style="flex: 1; padding: 0.7rem; font-size: 0.9rem; border-radius: var(--radius-md);">Cancelar</button>
-                <button type="button" class="btn btn-primary" onclick="saveGeminiKey()" style="flex: 1; padding: 0.7rem; font-size: 0.9rem; background: linear-gradient(135deg, #7000ff, #00e676); color: #0d0f14; border: none; font-weight: 700; box-shadow: 0 4px 15px rgba(112,0,255,0.25); border-radius: var(--radius-md);">Guardar Clave</button>
+                <button type="button" class="btn btn-primary" onclick="saveApiKeys()" style="flex: 1; padding: 0.7rem; font-size: 0.9rem; background: linear-gradient(135deg, #7000ff, #00e676); color: #0d0f14; border: none; font-weight: 700; box-shadow: 0 4px 15px rgba(112,0,255,0.25); border-radius: var(--radius-md);">Guardar Claves</button>
             </div>
         </div>
     </div>

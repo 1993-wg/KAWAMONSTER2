@@ -329,12 +329,14 @@ btnLogout.addEventListener('click', () => {
     showToast('Sesión cerrada correctamente.', 'info');
 });
 
-/* ===== GEMINI KEY SETUP & MODAL ===== */
+/* ===== API KEYS SETUP & MODAL ===== */
 window.openGeminiModal = () => {
     const modal = document.getElementById('geminiModal');
-    const input = document.getElementById('geminiApiKey');
-    if (modal && input) {
-        input.value = localStorage.getItem('gemini_api_key') || '';
+    const inputGemini = document.getElementById('geminiApiKey');
+    const inputPexels = document.getElementById('pexelsApiKey');
+    if (modal) {
+        if (inputGemini) inputGemini.value = localStorage.getItem('gemini_api_key') || '';
+        if (inputPexels) inputPexels.value = localStorage.getItem('pexels_api_key') || '';
         modal.style.display = 'flex';
     }
 };
@@ -344,15 +346,23 @@ window.closeGeminiModal = () => {
     if (modal) modal.style.display = 'none';
 };
 
-window.saveGeminiKey = () => {
-    const key = document.getElementById('geminiApiKey').value.trim();
-    if (key) {
-        localStorage.setItem('gemini_api_key', key);
-        showToast('Clave API de Gemini guardada correctamente.', 'success');
+window.saveApiKeys = () => {
+    const geminiKey = document.getElementById('geminiApiKey').value.trim();
+    const pexelsKey = document.getElementById('pexelsApiKey').value.trim();
+    
+    if (geminiKey) {
+        localStorage.setItem('gemini_api_key', geminiKey);
     } else {
         localStorage.removeItem('gemini_api_key');
-        showToast('Clave API de Gemini eliminada.', 'info');
     }
+    
+    if (pexelsKey) {
+        localStorage.setItem('pexels_api_key', pexelsKey);
+    } else {
+        localStorage.removeItem('pexels_api_key');
+    }
+    
+    showToast('Claves de API guardadas correctamente.', 'success');
     updateIAStatusIndicator();
     closeGeminiModal();
 };
@@ -378,11 +388,31 @@ const updateIAStatusIndicator = () => {
 };
 
 /* ===== GEMINI API REST CALLER ===== */
-const callGeminiAPI = async (prompt, systemInstruction = '') => {
+const callGeminiAPI = async (prompt, systemInstruction = '', plainText = false) => {
     const key = localStorage.getItem('gemini_api_key');
     if (!key) {
         openGeminiModal();
         throw new Error('API Key de Gemini no configurada.');
+    }
+
+    // Inyectar el conocimiento de la Gema en la instrucción del sistema
+    const guidelines = localStorage.getItem('gema_guidelines') || '';
+    const filesJSON = localStorage.getItem('gema_knowledge_files') || '[]';
+    const files = JSON.parse(filesJSON);
+    
+    let knowledgeText = '';
+    if (guidelines) {
+        knowledgeText += `Lineamientos de Marca y Estilo:\n${guidelines}\n\n`;
+    }
+    
+    files.forEach(f => {
+        if (f.type === 'text') {
+            knowledgeText += `Contenido del archivo de referencia (${f.name}):\n${f.content}\n\n`;
+        }
+    });
+
+    if (knowledgeText) {
+        systemInstruction = `Instrucciones del Negocio y Conocimiento:\n${knowledgeText}\n` + systemInstruction;
     }
 
     // Lista de modelos a intentar en secuencia en caso de alta demanda o fallos transitorios
@@ -412,7 +442,7 @@ const callGeminiAPI = async (prompt, systemInstruction = '') => {
             }
 
             requestBody.generationConfig = {
-                responseMimeType: "application/json"
+                responseMimeType: plainText ? "text/plain" : "application/json"
             };
 
             const response = await fetch(url, {
@@ -446,7 +476,7 @@ const callGeminiAPI = async (prompt, systemInstruction = '') => {
         } catch (err) {
             console.error(`Error de conexión o de API con ${model}:`, err);
             lastError = err;
-            continue; // Intentar el siguiente modelo en caso de error de red o error de API
+            continue; 
         }
     }
 
@@ -636,6 +666,421 @@ window.addAllIASuggestions = async () => {
     } finally {
         btn.disabled = false;
         btn.innerHTML = originalText;
+    }
+};
+
+/* ===== TAB NAVIGATION SYSTEM ===== */
+window.switchTab = (tab) => {
+    // Nav Items
+    const navProductos = document.getElementById('navProductos');
+    const navGema = document.getElementById('navGema');
+    const navImagenes = document.getElementById('navImagenes');
+    
+    // View Divs
+    const viewCatalog = document.getElementById('viewCatalog');
+    const viewGema = document.getElementById('viewGema');
+    const viewNanoBanan = document.getElementById('viewNanoBanan');
+
+    // Reset Active Classes
+    if (navProductos) navProductos.classList.remove('active');
+    if (navGema) navGema.classList.remove('active');
+    if (navImagenes) navImagenes.classList.remove('active');
+
+    // Hide Views
+    if (viewCatalog) viewCatalog.style.display = 'none';
+    if (viewGema) viewGema.style.display = 'none';
+    if (viewNanoBanan) viewNanoBanan.style.display = 'none';
+
+    // Activate selected
+    if (tab === 'productos') {
+        if (navProductos) navProductos.classList.add('active');
+        if (viewCatalog) viewCatalog.style.display = 'block';
+    } else if (tab === 'gema') {
+        if (navGema) navGema.classList.add('active');
+        if (viewGema) viewGema.style.display = 'block';
+        loadGemaSettings();
+    } else if (tab === 'imagenes') {
+        if (navImagenes) navImagenes.classList.add('active');
+        if (viewNanoBanan) viewNanoBanan.style.display = 'block';
+        populateProductSelects();
+    }
+};
+
+/* ===== GEMA DE CONOCIMIENTO LOGIC ===== */
+window.saveGemaSettings = async () => {
+    const guidelines = document.getElementById('gemaGuidelines').value;
+    localStorage.setItem('gema_guidelines', guidelines);
+
+    const txtFileInput = document.getElementById('gemaTextFile');
+    const imgFileInput = document.getElementById('gemaImgFile');
+    
+    const filesJSON = localStorage.getItem('gema_knowledge_files') || '[]';
+    const files = JSON.parse(filesJSON);
+
+    const readFileAsText = (file) => {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = reject;
+            reader.readAsText(file);
+        });
+    };
+
+    const readFileAsDataURL = (file) => {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+        });
+    };
+
+    try {
+        let added = false;
+        
+        // Carga de texto
+        if (txtFileInput.files.length > 0) {
+            const file = txtFileInput.files[0];
+            const content = await readFileAsText(file);
+            files.push({ name: file.name, type: 'text', content });
+            txtFileInput.value = '';
+            added = true;
+        }
+
+        // Carga de imagen
+        if (imgFileInput.files.length > 0) {
+            const file = imgFileInput.files[0];
+            const content = await readFileAsDataURL(file);
+            files.push({ name: file.name, type: 'image', content });
+            imgFileInput.value = '';
+            added = true;
+        }
+
+        localStorage.setItem('gema_knowledge_files', JSON.stringify(files));
+        showToast('Gema de Conocimiento guardada correctamente.', 'success');
+        renderGemaFiles();
+    } catch (err) {
+        console.error(err);
+        showToast('Error al procesar archivos de la Gema: ' + err.message, 'error');
+    }
+};
+
+window.loadGemaSettings = () => {
+    const guidelines = localStorage.getItem('gema_guidelines') || '';
+    const guidelinesTextarea = document.getElementById('gemaGuidelines');
+    if (guidelinesTextarea) guidelinesTextarea.value = guidelines;
+    renderGemaFiles();
+};
+
+window.renderGemaFiles = () => {
+    const list = document.getElementById('gemaFilesList');
+    const countText = document.getElementById('gemaFilesCount');
+    if (!list) return;
+
+    list.innerHTML = '';
+    const filesJSON = localStorage.getItem('gema_knowledge_files') || '[]';
+    const files = JSON.parse(filesJSON);
+
+    if (countText) {
+        countText.textContent = `${files.length} archivo${files.length !== 1 ? 's' : ''} cargado${files.length !== 1 ? 's' : ''}`;
+    }
+
+    if (files.length === 0) {
+        list.innerHTML = `<p style="grid-column: 1/-1; color: var(--text-muted); font-size: 0.85rem; text-align: center; padding: 1rem 0;">No hay archivos cargados en la Gema de conocimiento.</p>`;
+        return;
+    }
+
+    files.forEach((file, index) => {
+        const div = document.createElement('div');
+        div.style.cssText = 'background: var(--bg-elevated); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.8rem; position: relative; display: flex; flex-direction: column; gap: 0.5rem; justify-content: space-between;';
+        
+        let preview = '';
+        if (file.type === 'text') {
+            preview = `
+                <div style="font-size: 2rem; text-align: center; opacity: 0.5; margin-bottom: 0.25rem;">📄</div>
+                <div style="font-size: 0.82rem; font-weight: 600; text-align: center; word-break: break-all; color: var(--text-primary);">${file.name}</div>
+                <div style="font-size: 0.72rem; color: var(--text-muted); text-align: center;">Archivo de Texto</div>
+            `;
+        } else {
+            preview = `
+                <img src="${file.content}" style="width: 100%; height: 80px; object-fit: cover; border-radius: 4px; border: 1px solid var(--border);" onerror="this.src='images/logo.png'">
+                <div style="font-size: 0.82rem; font-weight: 600; text-align: center; word-break: break-all; color: var(--text-primary); margin-top: 0.25rem;">${file.name}</div>
+                <div style="font-size: 0.72rem; color: var(--text-muted); text-align: center;">Imagen de Referencia</div>
+            `;
+        }
+
+        div.innerHTML = `
+            <div>${preview}</div>
+            <button type="button" class="btn btn-danger" style="padding: 0.35rem; font-size: 0.72rem; width: 100%; margin-top: 0.5rem;" onclick="deleteGemaFile(${index})">
+                ✕ Eliminar
+            </button>
+        `;
+        list.appendChild(div);
+    });
+};
+
+window.deleteGemaFile = (index) => {
+    const filesJSON = localStorage.getItem('gema_knowledge_files') || '[]';
+    const files = JSON.parse(filesJSON);
+    files.splice(index, 1);
+    localStorage.setItem('gema_knowledge_files', JSON.stringify(files));
+    showToast('Archivo eliminado de la Gema.', 'info');
+    renderGemaFiles();
+};
+
+/* ===== DROP-DOWN SELECTS LOADER ===== */
+const populateProductSelects = () => {
+    const nbSelect = document.getElementById('nbProductSelect');
+    const pexSelect = document.getElementById('pexelsProductSelect');
+    if (nbSelect && pexSelect) {
+        nbSelect.innerHTML = '<option value="">-- No asociar (Sólo generar promo genérico) --</option>';
+        pexSelect.innerHTML = '<option value="form">-- Enviar a Formulario Activo --</option>';
+        
+        adminProducts.forEach(p => {
+            const opt = `<option value="${p.id}">${p.nombre} (${formatPrice(p.precio)})</option>`;
+            nbSelect.innerHTML += opt;
+            pexSelect.innerHTML += opt;
+        });
+    }
+};
+
+/* ===== NANO BANAN PRO IMAGE GENERATOR ===== */
+window.generateNanoBananImage = async () => {
+    const select = document.getElementById('nbProductSelect');
+    const styleSelect = document.getElementById('nbStyleSelect');
+    const promptTextarea = document.getElementById('nbPrompt');
+    const btn = document.getElementById('btnNBGenerate');
+    const placeholder = document.getElementById('nbPlaceholder');
+    const imageContainer = document.getElementById('nbImageContainer');
+    const generatedImg = document.getElementById('nbGeneratedImg');
+    const downloadLink = document.getElementById('nbDownloadLink');
+
+    const style = styleSelect.value;
+    const additionalPrompt = promptTextarea.value.trim();
+
+    let prodName = "Accesorios de Moto Premium";
+    if (select.value) {
+        const selectedProduct = adminProducts.find(p => p.id == select.value);
+        if (selectedProduct) {
+            prodName = selectedProduct.nombre;
+        }
+    }
+
+    const stylePrompts = {
+        estudio: "clean studio shot, minimalist dark background, professional product photography, studio lighting, hyperrealistic, 8k resolution, elegant green/white highlights",
+        tuning: "tuning racing style, neon green and electric blue glow, motorcycle garage background, carbon fiber textures, dramatic atmosphere, cinematic, detailed",
+        carretera: "high-speed action shot on highway road, background motion blur, dramatic sunset sky, motorcycle lifestyle, dynamic composition, photorealistic",
+        mecanica: "industrial workshop background, gears, smoke, mechanical tools, metallic textures, rough motorcycle garage atmosphere, hard shadows, highly detailed",
+        cyberpunk: "cyberpunk futuristic neon style, holographic overlays, rainy dark street reflection, purple and green lights, sci-fi concept art",
+        banner: "social media advertising banner style, copy-space, high-impact commercial look, vibrant contrast, modern layout, motorcycle spare parts promo"
+    };
+
+    btn.disabled = true;
+    btn.innerHTML = '<span>⏳ Diseñando con Nano Banan Pro...</span>';
+    placeholder.style.display = 'block';
+    imageContainer.style.display = 'none';
+
+    try {
+        const brandGuidelines = localStorage.getItem('gema_guidelines') || '';
+        
+        const promptForGemini = `El usuario desea generar una imagen para el producto "${prodName}".
+Estilo visual deseado: "${styleSelect.options[styleSelect.selectedIndex].text}".
+Descripción adicional del usuario: "${additionalPrompt}".
+Directrices de marca: "${brandGuidelines}".
+
+Escribe un prompt en inglés extremadamente descriptivo y optimizado para Stable Diffusion o Midjourney. El prompt debe describir visualmente el producto en el fondo y atmósfera adecuada, priorizando la calidad de foto de estudio o render publicitario. Responde estrictamente con el texto del prompt en inglés. No agregues comillas, explicaciones ni preámbulos.`;
+
+        let finalImagePrompt = `${prodName}, ${stylePrompts[style] || ''}, ${additionalPrompt}`;
+        
+        if (localStorage.getItem('gemini_api_key')) {
+            try {
+                const creativePrompt = await callGeminiAPI(promptForGemini, "Eres un director creativo publicitario experto en escribir prompts para generadores de imágenes.", true);
+                if (creativePrompt && creativePrompt.trim().length > 10) {
+                    finalImagePrompt = creativePrompt.trim();
+                }
+            } catch (gemErr) {
+                console.warn("Fallo al refinar prompt con Gemini, usando prompt predeterminado:", gemErr);
+            }
+        }
+
+        console.log("Generando imagen con el prompt:", finalImagePrompt);
+        
+        const seed = Math.floor(Math.random() * 1000000);
+        const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(finalImagePrompt)}?width=1080&height=1080&nologo=true&seed=${seed}`;
+
+        generatedImg.src = imageUrl;
+        
+        generatedImg.onload = () => {
+            placeholder.style.display = 'none';
+            imageContainer.style.display = 'block';
+            downloadLink.href = imageUrl;
+            btn.disabled = false;
+            btn.innerHTML = '<span>🪄 Generar Imagen con IA</span>';
+            showToast('Imagen promocional creada con éxito!', 'success');
+        };
+
+        generatedImg.onerror = () => {
+            throw new Error('La imagen de Pollinations no pudo cargarse.');
+        };
+
+    } catch (err) {
+        console.error(err);
+        showToast('Error de generación de imagen: ' + err.message, 'error');
+        btn.disabled = false;
+        btn.innerHTML = '<span>🪄 Generar Imagen con IA</span>';
+    }
+};
+
+window.saveGeneratedImgToProduct = async () => {
+    const select = document.getElementById('nbProductSelect');
+    const generatedImg = document.getElementById('nbGeneratedImg');
+    const saveBtn = document.getElementById('nbSaveProductBtn');
+    
+    if (!select.value) {
+        showToast('Selecciona un producto del catálogo al que desees asignarle esta imagen.', 'error');
+        return;
+    }
+    
+    const productId = Number(select.value);
+    const product = adminProducts.find(p => p.id === productId);
+    if (!product) return;
+
+    saveBtn.disabled = true;
+    saveBtn.innerHTML = '⏳ Guardando...';
+
+    try {
+        showToast('Descargando imagen generada y subiendo a Supabase...', 'info');
+        
+        const res = await fetch(generatedImg.src);
+        const blob = await res.blob();
+        const file = new File([blob], `nano_banan_${productId}_${Date.now()}.jpg`, { type: 'image/jpeg' });
+        const publicUrl = await uploadImage(file);
+        
+        const { error } = await db.from("productos").update({ imagen: publicUrl }).eq('id', productId);
+        if (error) throw error;
+        
+        showToast(`La imagen de "${product.nombre}" ha sido actualizada con éxito!`, 'success');
+        loadAdminProducts();
+    } catch (err) {
+        console.error(err);
+        showToast('Error al guardar imagen en el producto: ' + err.message, 'error');
+    } finally {
+        saveBtn.disabled = false;
+        saveBtn.innerHTML = '💾 Usar en Producto';
+    }
+};
+
+/* ===== PEXELS IMAGES SEARCH ENGINE ===== */
+window.searchPexelsImages = async () => {
+    const queryInput = document.getElementById('pexelsSearchQuery');
+    const btn = document.getElementById('btnPexelsSearch');
+    const list = document.getElementById('pexelsResultsList');
+    
+    const query = queryInput.value.trim();
+    if (!query) {
+        showToast('Ingresa un término de búsqueda para buscar imágenes.', 'error');
+        return;
+    }
+
+    const key = localStorage.getItem('pexels_api_key');
+    if (!key) {
+        openGeminiModal();
+        showToast('Por favor, configura tu API Key de Pexels en la ventana de configuración.', 'error');
+        return;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = '⏳ Buscando...';
+    list.innerHTML = '';
+
+    try {
+        const url = `https://api.pexels.com/v1/search?query=${encodeURIComponent(query)}&per_page=12`;
+        const res = await fetch(url, {
+            headers: {
+                'Authorization': key
+            }
+        });
+
+        if (!res.ok) {
+            if (res.status === 401) {
+                throw new Error('API Key de Pexels no válida o expirada.');
+            }
+            throw new Error(`Pexels API respondió con código: ${res.status}`);
+        }
+
+        const data = await res.json();
+        const photos = data.photos || [];
+
+        if (photos.length === 0) {
+            list.innerHTML = '<p style="grid-column: 1/-1; color: var(--text-muted); font-size: 0.85rem; text-align: center; padding: 1rem 0;">No se encontraron imágenes en Pexels que coincidan con la búsqueda.</p>';
+            return;
+        }
+
+        photos.forEach(photo => {
+            const div = document.createElement('div');
+            div.style.cssText = 'position: relative; border-radius: var(--radius-sm); overflow: hidden; border: 1px solid var(--border); aspect-ratio: 1; cursor: pointer; transition: transform var(--transition); background: #161921;';
+            div.innerHTML = `
+                <img src="${photo.src.medium}" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.src='images/logo.png'">
+                <div style="position: absolute; inset: 0; background: rgba(0,0,0,0.6); opacity: 0; display: flex; align-items: center; justify-content: center; transition: var(--transition); font-size: 0.72rem; color: #fff; font-weight: 700; text-align:center; padding: 0.5rem;" class="hover-overlay">
+                    Establecer Imagen
+                </div>
+            `;
+            
+            div.addEventListener('mouseenter', () => {
+                div.querySelector('.hover-overlay').style.opacity = '1';
+                div.style.transform = 'scale(1.03)';
+            });
+            div.addEventListener('mouseleave', () => {
+                div.querySelector('.hover-overlay').style.opacity = '0';
+                div.style.transform = 'scale(1)';
+            });
+            
+            div.addEventListener('click', () => {
+                selectPexelsImage(photo.src.large);
+            });
+            
+            list.appendChild(div);
+        });
+
+        showToast('Imágenes encontradas en Pexels 📷', 'success');
+    } catch (err) {
+        console.error(err);
+        showToast(err.message, 'error');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<span>🔍 Buscar</span>';
+    }
+};
+
+window.selectPexelsImage = async (imageUrl) => {
+    const select = document.getElementById('pexelsProductSelect');
+    const target = select.value;
+
+    if (target === 'form') {
+        const imgUrlInput = document.getElementById('imagenUrl');
+        if (imgUrlInput) {
+            imgUrlInput.value = imageUrl;
+            showToast('URL de imagen de Pexels copiada al formulario. Volviendo a la pestaña Catálogo.', 'success');
+            switchTab('productos');
+            document.querySelector('.section-card').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    } else {
+        const productId = Number(target);
+        const product = adminProducts.find(p => p.id === productId);
+        if (!product) return;
+
+        try {
+            showToast('Actualizando imagen del producto en Supabase...', 'info');
+            const { error } = await db.from("productos").update({ imagen: imageUrl }).eq('id', productId);
+            if (error) throw error;
+
+            showToast(`Imagen de "${product.nombre}" actualizada en Supabase.`, 'success');
+            loadAdminProducts();
+            populateProductSelects();
+        } catch (err) {
+            console.error(err);
+            showToast('Error al actualizar imagen del producto: ' + err.message, 'error');
+        }
     }
 };
 
