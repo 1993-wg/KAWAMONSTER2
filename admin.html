@@ -803,10 +803,96 @@
             .stats-grid { grid-template-columns: 1fr 1fr; }
             .page-body { padding: 1rem; }
             .topbar { padding: 0.9rem 1rem; }
+            .topbar-title h1 { font-size: 1.05rem; }
+
+            /* Table → Cards on mobile */
+            table thead { display: none; }
+
+            table tbody tr {
+                display: flex;
+                flex-wrap: wrap;
+                align-items: center;
+                gap: 0.6rem;
+                padding: 1rem;
+                border-bottom: 1px solid var(--border);
+                background: var(--bg-card);
+                position: relative;
+            }
+
+            table tbody tr:active {
+                background: var(--bg-elevated);
+            }
+
+            table tbody td {
+                border: none;
+                padding: 0;
+            }
+
+            /* Image cell */
+            table tbody td:nth-child(1) {
+                flex-shrink: 0;
+            }
+
+            table tbody td:nth-child(1) .prod-img {
+                width: 56px;
+                height: 56px;
+                border-radius: var(--radius-md);
+            }
+
+            /* Name cell */
+            table tbody td:nth-child(2) {
+                flex: 1;
+                min-width: 0;
+                font-size: 0.95rem;
+                font-weight: 600;
+            }
+
+            /* Price cell */
+            table tbody td:nth-child(3) {
+                position: absolute;
+                top: 1rem;
+                right: 1rem;
+                font-size: 0.9rem;
+            }
+
+            /* Status cell */
+            table tbody td:nth-child(4) {
+                width: 100%;
+                order: 3;
+            }
+
+            /* Actions cell */
+            table tbody td:nth-child(5) {
+                width: 100%;
+                order: 4;
+            }
+
+            table tbody td:nth-child(5) .action-btns {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 0.5rem;
+            }
+
+            table tbody td:nth-child(5) .btn {
+                padding: 0.7rem;
+                font-size: 0.9rem;
+                justify-content: center;
+                border-radius: var(--radius-md);
+            }
+
+            /* Empty state fix */
+            table tbody tr:has(.empty-state) {
+                display: table-row;
+            }
+            table tbody tr:has(.empty-state) td {
+                padding: 2rem 1rem;
+            }
         }
 
         @media (max-width: 480px) {
             .stats-grid { grid-template-columns: 1fr; }
+            .section-card-header { padding: 1rem; }
+            .section-card-body { padding: 1rem; }
         }
     </style>
 </head>
