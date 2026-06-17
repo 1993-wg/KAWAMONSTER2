@@ -4,238 +4,290 @@ const db = window.supabase.createClient(supabaseUrl, supabaseKey);
 
 let adminProducts = [];
 
+/* ===== FORMATTERS ===== */
 const formatPrice = (price) => {
     const num = Number(price);
     if (isNaN(num) || !price || num === 0) return '$ Consultar';
     return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(num);
 };
 
-// Helper to get product image with safe fallback SVG
 const getProductImage = (imgUrl) => {
     if (!imgUrl || imgUrl.trim() === '' || imgUrl === 'images/placeholder.jpg') {
-        return "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 24 24' fill='none' stroke='%23bbb' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' style='background-color:%23f3f3f3;'><rect x='3' y='3' width='18' height='18' rx='2' ry='2'/><circle cx='8.5' cy='8.5' r='1.5'/><polyline points='21 15 16 10 5 21'/></svg>";
+        return "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 24 24' fill='none' stroke='%23556' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' style='background:%231e2230;'><rect x='3' y='3' width='18' height='18' rx='2'/><circle cx='8.5' cy='8.5' r='1.5'/><polyline points='21 15 16 10 5 21'/></svg>";
     }
     return imgUrl;
 };
 
+/* ===== TOAST ===== */
+const showToast = (msg, type = 'info') => {
+    const icons = { success: '✅', error: '❌', info: 'ℹ️' };
+    const el = document.createElement('div');
+    el.className = `toast ${type}`;
+    el.innerHTML = `<span>${icons[type] || 'ℹ️'}</span> ${msg}`;
+    document.getElementById('toastContainer').appendChild(el);
+    setTimeout(() => el.style.opacity = '0', 3000);
+    setTimeout(() => el.remove(), 3500);
+};
 
+/* ===== STATS ===== */
+const updateStats = (products) => {
+    const total     = products.length;
+    const activos   = products.filter(p => p.activo).length;
+    const inactivos = total - activos;
+    const consultar = products.filter(p => !p.precio || Number(p.precio) === 0).length;
+
+    document.getElementById('statTotal').textContent     = total;
+    document.getElementById('statActivos').textContent   = activos;
+    document.getElementById('statInactivos').textContent = inactivos;
+    document.getElementById('statConsultar').textContent = consultar;
+    document.getElementById('productCount').textContent  = `${total} producto${total !== 1 ? 's' : ''}`;
+};
+
+/* ===== LOAD PRODUCTS ===== */
 const loadAdminProducts = async () => {
     const tbody = document.getElementById('adminProductsList');
-    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Cargando repuestos...</td></tr>';
-    
+    tbody.innerHTML = `
+        <tr>
+            <td colspan="5">
+                <div class="empty-state">
+                    <div class="empty-icon">⏳</div>
+                    <p>Cargando productos...</p>
+                </div>
+            </td>
+        </tr>`;
+
     const { data, error } = await db
         .from("productos")
         .select("*")
         .order("nombre");
-        
+
     if (error) {
         console.error("Error fetching products:", error);
-        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:red;">Error cargando repuestos: ${error.message}</td></tr>`;
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="5">
+                    <div class="empty-state">
+                        <div class="empty-icon">⚠️</div>
+                        <p style="color:var(--danger);">Error cargando productos: ${error.message}</p>
+                    </div>
+                </td>
+            </tr>`;
         return;
     }
-    
+
     adminProducts = data || [];
+    updateStats(adminProducts);
     renderAdminProducts();
 };
 
+/* ===== RENDER TABLE ===== */
 const renderAdminProducts = () => {
     const tbody = document.getElementById('adminProductsList');
     tbody.innerHTML = '';
-    
+
     if (adminProducts.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">No hay productos guardados.</td></tr>';
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="5">
+                    <div class="empty-state">
+                        <div class="empty-icon">📭</div>
+                        <p>No hay productos en el catálogo todavía.</p>
+                    </div>
+                </td>
+            </tr>`;
         return;
     }
-    
+
     adminProducts.forEach(product => {
         const tr = document.createElement('tr');
         tr.innerHTML = `
-            <td><img src="${getProductImage(product.imagen)}" alt="img" class="prod-img" onerror="this.onerror=null; this.src='images/logo.png';"></td>
-            <td>${product.nombre}</td>
-            <td>${formatPrice(product.precio)}</td>
             <td>
-                <span style="padding: 0.3rem 0.6rem; border-radius: 1rem; background: ${product.activo ? '#d4edda' : '#f8d7da'}; color: ${product.activo ? '#155724' : '#721c24'}; font-size: 0.85rem; font-weight: bold;">
+                <img src="${getProductImage(product.imagen)}" alt="${product.nombre}"
+                     class="prod-img" onerror="this.onerror=null; this.src='images/logo.png';">
+            </td>
+            <td class="prod-name">${product.nombre}</td>
+            <td class="prod-price">${formatPrice(product.precio)}</td>
+            <td>
+                <span class="status-badge ${product.activo ? 'active' : 'inactive'}">
+                    <span class="status-dot"></span>
                     ${product.activo ? 'Activo' : 'Inactivo'}
                 </span>
             </td>
-            <td class="action-btns">
-                <button class="btn-edit" onclick="editProduct(${product.id})">Editar</button>
-                <button class="btn-delete" onclick="deleteProduct(${product.id})">Eliminar</button>
+            <td>
+                <div class="action-btns">
+                    <button class="btn btn-info" onclick="editProduct(${product.id})">✏️ Editar</button>
+                    <button class="btn btn-danger" onclick="deleteProduct(${product.id})">🗑️ Eliminar</button>
+                </div>
             </td>
         `;
         tbody.appendChild(tr);
     });
 };
 
+/* ===== RESET FORM ===== */
 window.resetForm = () => {
     document.getElementById('productForm').reset();
     document.getElementById('productId').value = '';
-    document.getElementById('btnGuardar').textContent = 'Guardar Producto';
+    document.getElementById('formTitle').textContent = 'Agregar Nuevo Producto';
+    document.getElementById('btnGuardar').innerHTML = '<span>💾</span> Guardar Producto';
     document.getElementById('btnCancelar').style.display = 'none';
+    document.getElementById('editingBanner').style.display = 'none';
 };
 
+/* ===== EDIT PRODUCT ===== */
 window.editProduct = (id) => {
     const product = adminProducts.find(p => p.id === id);
     if (!product) return;
-    
-    document.getElementById('productId').value = product.id;
-    document.getElementById('nombre').value = product.nombre;
-    document.getElementById('precio').value = product.precio || '';
-    document.getElementById('imagenUrl').value = product.imagen || '';
-    document.getElementById('activo').value = product.activo ? 'true' : 'false';
-    
-    document.getElementById('btnGuardar').textContent = 'Actualizar Producto';
-    document.getElementById('btnCancelar').style.display = 'block';
-    
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    document.getElementById('productId').value    = product.id;
+    document.getElementById('nombre').value       = product.nombre;
+    document.getElementById('precio').value       = product.precio || '';
+    document.getElementById('imagenUrl').value    = product.imagen || '';
+    document.getElementById('activo').value       = product.activo ? 'true' : 'false';
+
+    document.getElementById('formTitle').textContent          = 'Editando Producto';
+    document.getElementById('btnGuardar').innerHTML           = '<span>💾</span> Actualizar Producto';
+    document.getElementById('btnCancelar').style.display      = 'block';
+    document.getElementById('editingBanner').style.display    = 'flex';
+
+    // Scroll to form
+    document.querySelector('.section-card').scrollIntoView({ behavior: 'smooth', block: 'start' });
 };
 
+/* ===== DELETE PRODUCT ===== */
 window.deleteProduct = async (id) => {
     if (!confirm('¿Estás seguro de que quieres eliminar este producto? Esta acción no se puede deshacer.')) return;
-    
-    const btn = document.querySelector(`button[onclick="deleteProduct(${id})"]`);
-    if(btn) btn.textContent = '...';
 
-    const { error } = await db
-        .from("productos")
-        .delete()
-        .eq('id', id);
-        
+    const btn = document.querySelector(`button[onclick="deleteProduct(${id})"]`);
+    if (btn) { btn.disabled = true; btn.innerHTML = '⏳'; }
+
+    const { error } = await db.from("productos").delete().eq('id', id);
+
     if (error) {
-        alert('Error eliminando producto: ' + error.message);
-        if(btn) btn.textContent = 'Eliminar';
+        showToast('Error al eliminar el producto: ' + error.message, 'error');
+        if (btn) { btn.disabled = false; btn.innerHTML = '🗑️ Eliminar'; }
     } else {
-        // alert('Producto eliminado correctamente.');
+        showToast('Producto eliminado correctamente.', 'success');
         loadAdminProducts();
     }
 };
 
+/* ===== UPLOAD IMAGE ===== */
 const uploadImage = async (file) => {
     const fileExt = file.name.split('.').pop();
     const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
-    const filePath = `${fileName}`;
-    
-    // Attempting to upload to a 'productos' bucket
+
     const { data, error } = await db.storage
         .from('productos')
-        .upload(filePath, file, {
-            cacheControl: '3600',
-            upsert: false
-        });
-        
-    if (error) {
-        throw error;
-    }
-    
-    const { data: publicUrlData } = db.storage
-        .from('productos')
-        .getPublicUrl(filePath);
-        
+        .upload(fileName, file, { cacheControl: '3600', upsert: false });
+
+    if (error) throw error;
+
+    const { data: publicUrlData } = db.storage.from('productos').getPublicUrl(fileName);
     return publicUrlData.publicUrl;
 };
 
+/* ===== SAVE PRODUCT FORM ===== */
 document.getElementById('productForm').addEventListener('submit', async (e) => {
     e.preventDefault();
-    
-    const id = document.getElementById('productId').value;
-    const nombre = document.getElementById('nombre').value;
-    const precio = document.getElementById('precio').value || null;
-    let imagen = document.getElementById('imagenUrl').value;
-    const activo = document.getElementById('activo').value === 'true';
-    
+
+    const id        = document.getElementById('productId').value;
+    const nombre    = document.getElementById('nombre').value.trim();
+    const precio    = document.getElementById('precio').value || null;
+    let   imagen    = document.getElementById('imagenUrl').value.trim();
+    const activo    = document.getElementById('activo').value === 'true';
     const fileInput = document.getElementById('imagenFile');
     const btnGuardar = document.getElementById('btnGuardar');
-    
+
     btnGuardar.disabled = true;
-    btnGuardar.textContent = 'Guardando...';
-    
+    btnGuardar.innerHTML = '<span>⏳</span> Guardando...';
+
     try {
         if (fileInput.files.length > 0) {
-            const file = fileInput.files[0];
             try {
-                imagen = await uploadImage(file);
-            } catch (uploadObjError) {
-                alert('No se pudo subir la imagen al bucket "productos" de Supabase. Es probable que el storage no esté configurado, la política RLS no lo permita, o el bucket deba ser público. Puedes usar una URL directa de la imagen en su lugar.\\n\\nDetalle del error: ' + uploadObjError.message);
+                imagen = await uploadImage(fileInput.files[0]);
+            } catch (uploadErr) {
+                showToast('No se pudo subir la imagen. Verifica el bucket de Supabase.', 'error');
+                console.error(uploadErr);
                 btnGuardar.disabled = false;
-                btnGuardar.textContent = id ? 'Actualizar Producto' : 'Guardar Producto';
+                btnGuardar.innerHTML = id ? '<span>💾</span> Actualizar Producto' : '<span>💾</span> Guardar Producto';
                 return;
             }
         }
-        
-        if (!imagen) {
-            imagen = '';
-        }
-        
+
+        if (!imagen) imagen = '';
+
         const payload = { nombre, precio, imagen, activo };
-        
+
         if (id) {
-            const { error } = await db
-                .from("productos")
-                .update(payload)
-                .eq('id', id);
-                
+            const { error } = await db.from("productos").update(payload).eq('id', id);
             if (error) throw error;
+            showToast('Producto actualizado correctamente.', 'success');
         } else {
-            const { error } = await db
-                .from("productos")
-                .insert([payload]);
-                
+            const { error } = await db.from("productos").insert([payload]);
             if (error) throw error;
+            showToast('Producto agregado al catálogo.', 'success');
         }
-        
+
         resetForm();
         loadAdminProducts();
-        
+
     } catch (err) {
         console.error(err);
-        alert('Ocurrió un error guardando el producto: ' + err.message);
+        showToast('Error al guardar: ' + err.message, 'error');
     } finally {
         btnGuardar.disabled = false;
-        btnGuardar.textContent = id ? 'Actualizar Producto' : 'Guardar Producto';
+        btnGuardar.innerHTML = id ? '<span>💾</span> Actualizar Producto' : '<span>💾</span> Guardar Producto';
     }
 });
 
-// LOGIC DE AUTENTICACION CON SUPABASE
+/* ===== AUTH ===== */
+const loginOverlay = document.getElementById('loginOverlay');
+const appLayout    = document.getElementById('appLayout');
+const btnLogout    = document.getElementById('btnLogout');
 
-const loginContainer = document.getElementById('loginContainer');
-const adminMain = document.getElementById('adminMain');
-const btnLogout = document.getElementById('btnLogout');
+const showApp = (session) => {
+    loginOverlay.style.display = 'none';
+    appLayout.style.display    = 'flex';
+    btnLogout.style.display    = 'block';
+
+    // Show user info
+    const email = session?.user?.email || 'Admin';
+    document.getElementById('userEmail').textContent = email;
+    document.getElementById('userAvatar').textContent = email.charAt(0).toUpperCase();
+
+    loadAdminProducts();
+};
+
+const showLogin = () => {
+    loginOverlay.style.display = 'flex';
+    appLayout.style.display    = 'none';
+    btnLogout.style.display    = 'none';
+};
 
 const checkSession = async () => {
     const { data: { session } } = await db.auth.getSession();
-    if (session) {
-        loginContainer.style.display = 'none';
-        adminMain.style.display = 'block';
-        btnLogout.style.display = 'block';
-        loadAdminProducts();
-    } else {
-        loginContainer.style.display = 'block';
-        adminMain.style.display = 'none';
-        btnLogout.style.display = 'none';
-    }
+    session ? showApp(session) : showLogin();
 };
 
 document.getElementById('loginForm').addEventListener('submit', async (e) => {
     e.preventDefault();
-    const email = document.getElementById('loginEmail').value;
+    const email    = document.getElementById('loginEmail').value;
     const password = document.getElementById('loginPassword').value;
-    const btn = document.getElementById('btnLoginBtn');
-    
+    const btn      = document.getElementById('btnLoginBtn');
+
     btn.disabled = true;
-    btn.textContent = 'Verificando...';
-    
-    const { data, error } = await db.auth.signInWithPassword({
-        email: email,
-        password: password,
-    });
-    
+    btn.innerHTML = '<span>⏳</span> Verificando...';
+
+    const { data, error } = await db.auth.signInWithPassword({ email, password });
+
     btn.disabled = false;
-    btn.textContent = 'Ingresar al Panel';
-    
+    btn.innerHTML = '<span>🔐</span> Ingresar al Panel';
+
     if (error) {
-        alert('Error al iniciar sesión: Credeciales incorrectas o usuario no existe.');
+        showToast('Credenciales incorrectas. Intenta de nuevo.', 'error');
     } else {
-        checkSession();
+        showApp(data.session);
     }
 });
 
@@ -243,7 +295,8 @@ btnLogout.addEventListener('click', async () => {
     await db.auth.signOut();
     document.getElementById('loginEmail').value = '';
     document.getElementById('loginPassword').value = '';
-    checkSession();
+    showLogin();
+    showToast('Sesión cerrada correctamente.', 'info');
 });
 
 document.addEventListener('DOMContentLoaded', checkSession);
