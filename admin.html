@@ -983,6 +983,10 @@
                 <span>Administra el catálogo de repuestos y accesorios</span>
             </div>
             <div class="topbar-actions">
+                <!-- Indicador y Configuración de IA -->
+                <button type="button" id="btnIAConfigTopbar" class="btn" style="background: rgba(112, 0, 255, 0.1); border: 1px solid rgba(112, 0, 255, 0.3); color: #b070ff; padding: 0.45rem 1rem; border-radius: 99px; font-size: 0.8rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 0.4rem; transition: var(--transition);" onclick="openGeminiModal()">
+                    <span style="font-size: 0.95rem; line-height: 1;">✨</span> <span id="iaStatusText">IA: Inactiva</span>
+                </button>
                 <div class="user-chip" id="userChip">
                     <div class="user-avatar" id="userAvatar">A</div>
                     <span id="userEmail">Admin</span>
@@ -1040,8 +1044,13 @@
 
                             <div class="form-group">
                                 <label for="nombre">Nombre del Producto <span class="required">*</span></label>
-                                <input type="text" id="nombre" class="form-control"
-                                       placeholder="Ej. Filtro de Aceite KLX 150" required>
+                                <div style="display: flex; gap: 0.5rem; align-items: center;">
+                                    <input type="text" id="nombre" class="form-control"
+                                           placeholder="Ej. Filtro de Aceite KLX 150" required style="flex: 1;">
+                                    <button type="button" id="btnIAOptimize" class="btn" style="background: linear-gradient(135deg, #7000ff, #00e676); color: #0d0f14; border: none; font-weight: 700; box-shadow: 0 4px 10px rgba(112,0,255,0.25); height: 42px; padding: 0 1rem; border-radius: var(--radius-sm); cursor: pointer;" onclick="optimizeProductWithIA()" title="Optimizar Nombre y Estimar Precio con Gemini IA">
+                                        <span>✨ IA</span>
+                                    </button>
+                                </div>
                             </div>
 
                             <div class="form-group">
@@ -1087,6 +1096,40 @@
                 </div>
             </div>
 
+            <!-- IA BULK GENERATOR SECTION (COLLAPSIBLE) -->
+            <div class="section-card" id="iaGeneratorSection" style="border: 1px dashed rgba(112, 0, 255, 0.4); background: rgba(112, 0, 255, 0.02); transition: all var(--transition);">
+                <div class="section-card-header" style="cursor: pointer; user-select: none;" onclick="toggleIAGenerator()">
+                    <h2 style="color: #b070ff; margin: 0; font-size: 1rem; font-weight: 700; display: flex; align-items: center; gap: 0.6rem;">
+                        <span class="section-icon" style="background: rgba(112, 0, 255, 0.15); color: #b070ff; width: 28px; height: 28px; border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; font-size: 0.9rem;">✨</span>
+                        Generador de Productos con IA (Lotes)
+                    </h2>
+                    <span id="iaGenToggleIcon" style="font-size: 0.8rem; color: #b070ff; font-weight: 700; transition: transform var(--transition);">▼</span>
+                </div>
+                <div class="section-card-body" id="iaGeneratorBody" style="display: none; padding: 1.5rem;">
+                    <p style="font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 1.2rem; line-height: 1.5;">
+                        Escribe una idea general (ej. <i>"5 accesorios tuning para KTM Duke 200"</i> o <i>"repuestos comunes para AKT Flex 125"</i>) y Gemini IA generará propuestas completas de nombres y precios de mercado para agregarlos rápidamente.
+                    </p>
+                    <div style="display: flex; gap: 0.75rem; margin-bottom: 1.2rem; flex-wrap: wrap;">
+                        <input type="text" id="iaPrompt" class="form-control" placeholder="Ej. 5 repuestos comunes de motor para Yamaha FZ 16..." style="flex: 1; min-width: 250px;">
+                        <button type="button" id="btnIAGenerate" class="btn btn-primary" style="background: linear-gradient(135deg, #7000ff, #b070ff); color: white; border: none; font-weight: 700; padding: 0.75rem 1.5rem; box-shadow: 0 4px 12px rgba(112,0,255,0.3); border-radius: var(--radius-md);" onclick="generateProductsWithIA()">
+                            <span>🪄 Generar</span>
+                        </button>
+                    </div>
+                    
+                    <div id="iaSuggestionsContainer" style="display: none; border-top: 1px solid var(--border); padding-top: 1.2rem; margin-top: 1rem;">
+                        <h3 style="font-size: 0.9rem; font-weight: 700; margin-bottom: 1rem; color: var(--text-primary); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+                            <span>Propuestas Generadas:</span>
+                            <button type="button" id="btnIAAddAll" class="btn btn-info" style="font-size: 0.78rem; padding: 0.4rem 0.9rem; border-radius: var(--radius-sm); display: flex; align-items: center; gap: 0.3rem;" onclick="addAllIASuggestions()">
+                                <span>⚡</span> Agregar Todos
+                            </button>
+                        </h3>
+                        <div id="iaSuggestionsList" style="display: flex; flex-direction: column; gap: 0.8rem; max-height: 350px; overflow-y: auto; padding-right: 0.25rem;">
+                            <!-- Suggestions render here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- PRODUCTS TABLE -->
             <div class="section-card">
                 <div class="section-card-header">
@@ -1096,6 +1139,15 @@
                     </h2>
                     <span id="productCount" style="font-size:0.8rem; color:var(--text-muted); font-weight:500;"></span>
                 </div>
+                
+                <!-- Barra de búsqueda en tiempo real -->
+                <div class="search-bar-container" style="padding: 1rem 1.5rem; border-bottom: 1px solid var(--border); background: rgba(255,255,255,0.01); display: flex; align-items: center; gap: 1rem;">
+                    <div style="position: relative; flex: 1;">
+                        <input type="text" id="txtSearch" class="form-control" placeholder="🔍 Buscar productos por nombre..." style="padding-left: 2.6rem; transition: var(--transition);">
+                        <span style="position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); pointer-events: none; opacity: 0.4; font-size: 1rem;"></span>
+                    </div>
+                </div>
+
                 <div class="table-wrapper">
                     <table>
                         <thead>
@@ -1122,6 +1174,32 @@
             </div>
 
         </main>
+    </div>
+</div>
+
+<!-- ===== GEMINI KEY MODAL ===== -->
+<div id="geminiModal" class="login-overlay" style="display:none; background: rgba(13, 15, 20, 0.85); backdrop-filter: blur(8px); justify-content: center; align-items: center;">
+    <div class="login-card" style="border: 1px solid rgba(112, 0, 255, 0.3); box-shadow: 0 8px 32px rgba(112, 0, 255, 0.15); animation: fadeInUp 0.3s ease;">
+        <div class="login-brand" style="margin-bottom: 1.5rem;">
+            <span style="font-size: 2.8rem; display: block; margin-bottom: 0.5rem; filter: drop-shadow(0 0 10px rgba(112,0,255,0.5));">✨</span>
+            <h2 style="font-size: 1.4rem; font-weight: 800; color: var(--text-primary);">Configuración de Gemini IA</h2>
+            <p style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 0.3rem;">Para activar las funciones de IA, ingresa tu API Key gratuita de Google Gemini.</p>
+        </div>
+        
+        <div class="login-form">
+            <div class="form-group">
+                <label for="geminiApiKey">Gemini API Key</label>
+                <input type="password" id="geminiApiKey" class="form-control" placeholder="AIzaSy..." required style="letter-spacing: 0.1em;">
+                <span class="form-hint" style="color: var(--brand); font-size: 0.75rem;">
+                    Obtén una clave gratis en <a href="https://aistudio.google.com/" target="_blank" style="color: var(--brand); text-decoration: underline; font-weight: 600;">Google AI Studio</a>.
+                </span>
+            </div>
+            
+            <div style="display: flex; gap: 0.75rem; margin-top: 1rem;">
+                <button type="button" class="btn btn-secondary" onclick="closeGeminiModal()" style="flex: 1; padding: 0.7rem; font-size: 0.9rem; border-radius: var(--radius-md);">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="saveGeminiKey()" style="flex: 1; padding: 0.7rem; font-size: 0.9rem; background: linear-gradient(135deg, #7000ff, #00e676); color: #0d0f14; border: none; font-weight: 700; box-shadow: 0 4px 15px rgba(112,0,255,0.25); border-radius: var(--radius-md);">Guardar Clave</button>
+            </div>
+        </div>
     </div>
 </div>
 
