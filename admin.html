@@ -1040,41 +1040,7 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script>
-    /* ===== TOAST HELPER ===== */
-    function showToast(msg, type = 'info') {
-        const icons = { success: '✅', error: '❌', info: 'ℹ️' };
-        const el = document.createElement('div');
-        el.className = `toast ${type}`;
-        el.innerHTML = `<span>${icons[type] || 'ℹ️'}</span> ${msg}`;
-        document.getElementById('toastContainer').appendChild(el);
-        setTimeout(() => el.remove(), 3500);
-    }
-
-    /* ===== STATS UPDATE ===== */
-    function updateStats(products) {
-        const total    = products.length;
-        const activos  = products.filter(p => p.activo).length;
-        const inactivos= total - activos;
-        const consultar= products.filter(p => !p.precio).length;
-
-        document.getElementById('statTotal').textContent     = total;
-        document.getElementById('statActivos').textContent   = activos;
-        document.getElementById('statInactivos').textContent = inactivos;
-        document.getElementById('statConsultar').textContent = consultar;
-        document.getElementById('productCount').textContent  = `${total} producto${total !== 1 ? 's' : ''}`;
-    }
-
-    /* ===== RESET FORM ===== */
-    function resetForm() {
-        document.getElementById('productForm').reset();
-        document.getElementById('productId').value = '';
-        document.getElementById('formTitle').textContent = 'Agregar Nuevo Producto';
-        document.getElementById('btnCancelar').style.display = 'none';
-        document.getElementById('editingBanner').style.display = 'none';
-        document.getElementById('btnGuardar').innerHTML = '<span>💾</span> Guardar Producto';
-    }
-</script>
 <script src="admin.js"></script>
 </body>
 </html>
+
