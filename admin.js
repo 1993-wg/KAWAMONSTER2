@@ -241,20 +241,21 @@ document.getElementById('productForm').addEventListener('submit', async (e) => {
     }
 });
 
-/* ===== AUTH ===== */
+/* ===== AUTH LOCAL ===== */
+const ADMIN_USER = 'Admin';
+const ADMIN_PASS = '1216';
+
 const loginOverlay = document.getElementById('loginOverlay');
 const appLayout    = document.getElementById('appLayout');
 const btnLogout    = document.getElementById('btnLogout');
 
-const showApp = (session) => {
+const showApp = () => {
     loginOverlay.style.display = 'none';
     appLayout.style.display    = 'flex';
     btnLogout.style.display    = 'block';
 
-    // Show user info
-    const email = session?.user?.email || 'Admin';
-    document.getElementById('userEmail').textContent = email;
-    document.getElementById('userAvatar').textContent = email.charAt(0).toUpperCase();
+    document.getElementById('userEmail').textContent  = ADMIN_USER;
+    document.getElementById('userAvatar').textContent  = 'A';
 
     loadAdminProducts();
 };
@@ -265,38 +266,40 @@ const showLogin = () => {
     btnLogout.style.display    = 'none';
 };
 
-const checkSession = async () => {
-    const { data: { session } } = await db.auth.getSession();
-    session ? showApp(session) : showLogin();
+const checkSession = () => {
+    sessionStorage.getItem('kawa_admin_auth') === 'true' ? showApp() : showLogin();
 };
 
-document.getElementById('loginForm').addEventListener('submit', async (e) => {
+document.getElementById('loginForm').addEventListener('submit', (e) => {
     e.preventDefault();
-    const email    = document.getElementById('loginEmail').value;
+    const user     = document.getElementById('loginUser').value.trim();
     const password = document.getElementById('loginPassword').value;
     const btn      = document.getElementById('btnLoginBtn');
 
     btn.disabled = true;
     btn.innerHTML = '<span>⏳</span> Verificando...';
 
-    const { data, error } = await db.auth.signInWithPassword({ email, password });
+    setTimeout(() => {
+        btn.disabled = false;
+        btn.innerHTML = '<span>🔐</span> Ingresar al Panel';
 
-    btn.disabled = false;
-    btn.innerHTML = '<span>🔐</span> Ingresar al Panel';
-
-    if (error) {
-        showToast('Credenciales incorrectas. Intenta de nuevo.', 'error');
-    } else {
-        showApp(data.session);
-    }
+        if (user === ADMIN_USER && password === ADMIN_PASS) {
+            sessionStorage.setItem('kawa_admin_auth', 'true');
+            showApp();
+            showToast('Bienvenido, ' + ADMIN_USER + '!', 'success');
+        } else {
+            showToast('Usuario o contraseña incorrectos.', 'error');
+        }
+    }, 500);
 });
 
-btnLogout.addEventListener('click', async () => {
-    await db.auth.signOut();
-    document.getElementById('loginEmail').value = '';
+btnLogout.addEventListener('click', () => {
+    sessionStorage.removeItem('kawa_admin_auth');
+    document.getElementById('loginUser').value = '';
     document.getElementById('loginPassword').value = '';
     showLogin();
     showToast('Sesión cerrada correctamente.', 'info');
 });
 
 document.addEventListener('DOMContentLoaded', checkSession);
+
