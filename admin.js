@@ -333,10 +333,8 @@ btnLogout.addEventListener('click', () => {
 window.openGeminiModal = () => {
     const modal = document.getElementById('geminiModal');
     const inputGemini = document.getElementById('geminiApiKey');
-    const inputPexels = document.getElementById('pexelsApiKey');
     if (modal) {
         if (inputGemini) inputGemini.value = localStorage.getItem('gemini_api_key') || '';
-        if (inputPexels) inputPexels.value = localStorage.getItem('pexels_api_key') || '';
         modal.style.display = 'flex';
     }
 };
@@ -348,7 +346,6 @@ window.closeGeminiModal = () => {
 
 window.saveApiKeys = () => {
     const geminiKey = document.getElementById('geminiApiKey').value.trim();
-    const pexelsKey = document.getElementById('pexelsApiKey').value.trim();
     
     if (geminiKey) {
         localStorage.setItem('gemini_api_key', geminiKey);
@@ -356,13 +353,7 @@ window.saveApiKeys = () => {
         localStorage.removeItem('gemini_api_key');
     }
     
-    if (pexelsKey) {
-        localStorage.setItem('pexels_api_key', pexelsKey);
-    } else {
-        localStorage.removeItem('pexels_api_key');
-    }
-    
-    showToast('Claves de API guardadas correctamente.', 'success');
+    showToast('Clave de API de Gemini guardada correctamente.', 'success');
     updateIAStatusIndicator();
     closeGeminiModal();
 };
@@ -388,7 +379,7 @@ const updateIAStatusIndicator = () => {
 };
 
 /* ===== GEMINI API REST CALLER ===== */
-const callGeminiAPI = async (prompt, systemInstruction = '', plainText = false) => {
+const callGeminiAPI = async (prompt, systemInstruction = '', plainText = false, imageObj = null) => {
     const key = localStorage.getItem('gemini_api_key');
     if (!key) {
         openGeminiModal();
@@ -423,12 +414,20 @@ const callGeminiAPI = async (prompt, systemInstruction = '', plainText = false) 
         try {
             const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
             
+            const parts = [{ text: prompt }];
+            if (imageObj && imageObj.mimeType && imageObj.data) {
+                parts.push({
+                    inlineData: {
+                        mimeType: imageObj.mimeType,
+                        data: imageObj.data
+                    }
+                });
+            }
+
             const requestBody = {
                 contents: [
                     {
-                        parts: [
-                            { text: prompt }
-                        ]
+                        parts: parts
                     }
                 ]
             };
@@ -831,15 +830,12 @@ window.deleteGemaFile = (index) => {
 /* ===== DROP-DOWN SELECTS LOADER ===== */
 const populateProductSelects = () => {
     const nbSelect = document.getElementById('nbProductSelect');
-    const pexSelect = document.getElementById('pexelsProductSelect');
-    if (nbSelect && pexSelect) {
+    if (nbSelect) {
         nbSelect.innerHTML = '<option value="">-- No asociar (Sólo generar promo genérico) --</option>';
-        pexSelect.innerHTML = '<option value="form">-- Enviar a Formulario Activo --</option>';
         
         adminProducts.forEach(p => {
             const opt = `<option value="${p.id}">${p.nombre} (${formatPrice(p.precio)})</option>`;
             nbSelect.innerHTML += opt;
-            pexSelect.innerHTML += opt;
         });
     }
 };
@@ -854,6 +850,7 @@ window.generateNanoBananImage = async () => {
     const imageContainer = document.getElementById('nbImageContainer');
     const generatedImg = document.getElementById('nbGeneratedImg');
     const downloadLink = document.getElementById('nbDownloadLink');
+    const refImageInput = document.getElementById('nbRefImage');
 
     const style = styleSelect.value;
     const additionalPrompt = promptTextarea.value.trim();
@@ -880,27 +877,64 @@ window.generateNanoBananImage = async () => {
     placeholder.style.display = 'block';
     imageContainer.style.display = 'none';
 
+    const readAsBase64 = (file) => {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => {
+                const base64Data = reader.result.split(',')[1];
+                resolve({
+                    mimeType: file.type,
+                    data: base64Data
+                });
+            };
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+        });
+    };
+
     try {
         const brandGuidelines = localStorage.getItem('gema_guidelines') || '';
+        let imageObj = null;
+
+        if (refImageInput && refImageInput.files.length > 0) {
+            showToast('Leyendo imagen de referencia...', 'info');
+            imageObj = await readAsBase64(refImageInput.files[0]);
+        }
+
+        let promptForGemini = "";
         
-        const promptForGemini = `El usuario desea generar una imagen para el producto "${prodName}".
+        if (imageObj) {
+            promptForGemini = `Analiza detalladamente la foto del producto/repuesto de moto adjunta. Identifica qué tipo de pieza o accesorio es, describiendo su forma, color, material y detalles visuales clave.
+            
+Luego, escribe un prompt en inglés extremadamente descriptivo para un generador de imágenes de IA (como Stable Diffusion o Midjourney). Este prompt debe integrar el producto analizado y dibujarlo exactamente como es en un escenario correspondiente al estilo visual: "${styleSelect.options[styleSelect.selectedIndex].text}".
+Incorpóralo bajo las siguientes directrices de marca: "${brandGuidelines}". El producto debe ser el elemento central, nítido y detallado, colocado en un fondo limpio y con la iluminación del estilo.
+Evita texto o logos en la imagen. Responde estrictamente con el texto del prompt final en inglés. No agregues comillas, explicaciones ni preámbulos.`;
+        } else {
+            promptForGemini = `El usuario desea generar una imagen para el producto "${prodName}".
 Estilo visual deseado: "${styleSelect.options[styleSelect.selectedIndex].text}".
 Descripción adicional del usuario: "${additionalPrompt}".
 Directrices de marca: "${brandGuidelines}".
 
 Escribe un prompt en inglés extremadamente descriptivo y optimizado para Stable Diffusion o Midjourney. El prompt debe describir visualmente el producto en el fondo y atmósfera adecuada, priorizando la calidad de foto de estudio o render publicitario. Responde estrictamente con el texto del prompt en inglés. No agregues comillas, explicaciones ni preámbulos.`;
+        }
 
         let finalImagePrompt = `${prodName}, ${stylePrompts[style] || ''}, ${additionalPrompt}`;
         
         if (localStorage.getItem('gemini_api_key')) {
             try {
-                const creativePrompt = await callGeminiAPI(promptForGemini, "Eres un director creativo publicitario experto en escribir prompts para generadores de imágenes.", true);
+                if (imageObj) {
+                    showToast('Gemini analizando imagen de referencia multimodal...', 'info');
+                }
+                const creativePrompt = await callGeminiAPI(promptForGemini, "Eres un director creativo publicitario experto en escribir prompts para generadores de imágenes.", true, imageObj);
                 if (creativePrompt && creativePrompt.trim().length > 10) {
                     finalImagePrompt = creativePrompt.trim();
                 }
             } catch (gemErr) {
                 console.warn("Fallo al refinar prompt con Gemini, usando prompt predeterminado:", gemErr);
+                showToast("Fallo al refinar con Gemini, usando prompt predeterminado", "info");
             }
+        } else if (imageObj) {
+            throw new Error('Para generar a partir de una imagen de referencia, debes configurar la API Key de Gemini en Configuración.');
         }
 
         console.log("Generando imagen con el prompt:", finalImagePrompt);
@@ -967,120 +1001,6 @@ window.saveGeneratedImgToProduct = async () => {
     } finally {
         saveBtn.disabled = false;
         saveBtn.innerHTML = '💾 Usar en Producto';
-    }
-};
-
-/* ===== PEXELS IMAGES SEARCH ENGINE ===== */
-window.searchPexelsImages = async () => {
-    const queryInput = document.getElementById('pexelsSearchQuery');
-    const btn = document.getElementById('btnPexelsSearch');
-    const list = document.getElementById('pexelsResultsList');
-    
-    const query = queryInput.value.trim();
-    if (!query) {
-        showToast('Ingresa un término de búsqueda para buscar imágenes.', 'error');
-        return;
-    }
-
-    const key = localStorage.getItem('pexels_api_key');
-    if (!key) {
-        openGeminiModal();
-        showToast('Por favor, configura tu API Key de Pexels en la ventana de configuración.', 'error');
-        return;
-    }
-
-    btn.disabled = true;
-    btn.innerHTML = '⏳ Buscando...';
-    list.innerHTML = '';
-
-    try {
-        const url = `https://api.pexels.com/v1/search?query=${encodeURIComponent(query)}&per_page=12`;
-        const res = await fetch(url, {
-            headers: {
-                'Authorization': key
-            }
-        });
-
-        if (!res.ok) {
-            if (res.status === 401) {
-                throw new Error('API Key de Pexels no válida o expirada.');
-            }
-            throw new Error(`Pexels API respondió con código: ${res.status}`);
-        }
-
-        const data = await res.json();
-        const photos = data.photos || [];
-
-        if (photos.length === 0) {
-            list.innerHTML = '<p style="grid-column: 1/-1; color: var(--text-muted); font-size: 0.85rem; text-align: center; padding: 1rem 0;">No se encontraron imágenes en Pexels que coincidan con la búsqueda.</p>';
-            return;
-        }
-
-        photos.forEach(photo => {
-            const div = document.createElement('div');
-            div.style.cssText = 'position: relative; border-radius: var(--radius-sm); overflow: hidden; border: 1px solid var(--border); aspect-ratio: 1; cursor: pointer; transition: transform var(--transition); background: #161921;';
-            div.innerHTML = `
-                <img src="${photo.src.medium}" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.src='images/logo.png'">
-                <div style="position: absolute; inset: 0; background: rgba(0,0,0,0.6); opacity: 0; display: flex; align-items: center; justify-content: center; transition: var(--transition); font-size: 0.72rem; color: #fff; font-weight: 700; text-align:center; padding: 0.5rem;" class="hover-overlay">
-                    Establecer Imagen
-                </div>
-            `;
-            
-            div.addEventListener('mouseenter', () => {
-                div.querySelector('.hover-overlay').style.opacity = '1';
-                div.style.transform = 'scale(1.03)';
-            });
-            div.addEventListener('mouseleave', () => {
-                div.querySelector('.hover-overlay').style.opacity = '0';
-                div.style.transform = 'scale(1)';
-            });
-            
-            div.addEventListener('click', () => {
-                selectPexelsImage(photo.src.large);
-            });
-            
-            list.appendChild(div);
-        });
-
-        showToast('Imágenes encontradas en Pexels 📷', 'success');
-    } catch (err) {
-        console.error(err);
-        showToast(err.message, 'error');
-    } finally {
-        btn.disabled = false;
-        btn.innerHTML = '<span>🔍 Buscar</span>';
-    }
-};
-
-window.selectPexelsImage = async (imageUrl) => {
-    const select = document.getElementById('pexelsProductSelect');
-    const target = select.value;
-
-    if (target === 'form') {
-        const imgUrlInput = document.getElementById('imagenUrl');
-        if (imgUrlInput) {
-            imgUrlInput.value = imageUrl;
-            showToast('URL de imagen de Pexels copiada al formulario. Volviendo a la pestaña Catálogo.', 'success');
-            switchTab('productos');
-            document.querySelector('.section-card').scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-    } else {
-        const productId = Number(target);
-        const product = adminProducts.find(p => p.id === productId);
-        if (!product) return;
-
-        try {
-            showToast('Actualizando imagen del producto en Supabase...', 'info');
-            const { error } = await db.from("productos").update({ imagen: imageUrl }).eq('id', productId);
-            if (error) throw error;
-
-            showToast(`Imagen de "${product.nombre}" actualizada en Supabase.`, 'success');
-            loadAdminProducts();
-            populateProductSelects();
-        } catch (err) {
-            console.error(err);
-            showToast('Error al actualizar imagen del producto: ' + err.message, 'error');
-        }
     }
 };
 

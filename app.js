@@ -291,9 +291,20 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// Service Worker Registration
+// Service Worker Registration with Auto-Reload
 if ('serviceWorker' in navigator) {
+    // When a new SW takes over, reload the page to show latest content
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+        window.location.reload();
+    });
+
     window.addEventListener('load', () => {
-        navigator.serviceWorker.register('sw.js').catch(() => {});
+        navigator.serviceWorker.register('sw.js')
+            .then(reg => {
+                // Check for updates immediately and every 60 seconds
+                reg.update();
+                setInterval(() => reg.update(), 60 * 1000);
+            })
+            .catch(() => {});
     });
 }
