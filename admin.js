@@ -385,50 +385,72 @@ const callGeminiAPI = async (prompt, systemInstruction = '') => {
         throw new Error('API Key de Gemini no configurada.');
     }
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${key}`;
-    
-    const requestBody = {
-        contents: [
-            {
-                parts: [
-                    { text: prompt }
+    // Lista de modelos a intentar en secuencia en caso de alta demanda o fallos transitorios
+    const models = ['gemini-3.5-flash', 'gemini-3.1-flash-lite', 'gemini-3.1-flash'];
+    let lastError = null;
+
+    for (const model of models) {
+        try {
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
+            
+            const requestBody = {
+                contents: [
+                    {
+                        parts: [
+                            { text: prompt }
+                        ]
+                    }
                 ]
+            };
+
+            if (systemInstruction) {
+                requestBody.systemInstruction = {
+                    parts: [
+                        { text: systemInstruction }
+                    ]
+                };
             }
-        ]
-    };
 
-    if (systemInstruction) {
-        requestBody.systemInstruction = {
-            parts: [
-                { text: systemInstruction }
-            ]
-        };
+            requestBody.generationConfig = {
+                responseMimeType: "application/json"
+            };
+
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(requestBody)
+            });
+
+            if (!response.ok) {
+                const errData = await response.json().catch(() => ({}));
+                const errMsg = errData.error?.message || response.statusText;
+                
+                // Si es un error de sobrecarga (503), tasa límite (429) o error de servidor (500), probamos con el siguiente modelo
+                if (response.status === 503 || response.status === 429 || response.status === 500) {
+                    console.warn(`Modelo ${model} no disponible (Status ${response.status}). Probando fallback...`);
+                    lastError = new Error(`Error de Gemini (${model}): ${errMsg}`);
+                    continue; 
+                }
+                throw new Error(`Error de Gemini (${model}): ${errMsg}`);
+            }
+
+            const result = await response.json();
+            const responseText = result.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (!responseText) {
+                throw new Error('No se recibió respuesta válida de la IA.');
+            }
+            console.log(`Respuesta de IA exitosa usando el modelo: ${model}`);
+            return responseText;
+        } catch (err) {
+            console.error(`Error de conexión o de API con ${model}:`, err);
+            lastError = err;
+            continue; // Intentar el siguiente modelo en caso de error de red o error de API
+        }
     }
 
-    requestBody.generationConfig = {
-        responseMimeType: "application/json"
-    };
-
-    const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(requestBody)
-    });
-
-    if (!response.ok) {
-        const errData = await response.json().catch(() => ({}));
-        const errMsg = errData.error?.message || response.statusText;
-        throw new Error(`Error de Gemini: ${errMsg}`);
-    }
-
-    const result = await response.json();
-    const responseText = result.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!responseText) {
-        throw new Error('No se recibió respuesta válida de la IA.');
-    }
-    return responseText;
+    throw lastError || new Error('Todos los modelos de Gemini se encuentran sobrecargados. Por favor, intenta de nuevo en unos momentos.');
 };
 
 /* ===== AI OPTIMIZE PRODUCT IN FORM ===== */
